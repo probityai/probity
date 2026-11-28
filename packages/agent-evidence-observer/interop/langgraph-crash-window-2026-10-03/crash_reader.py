@@ -14,7 +14,7 @@ from probity_observer.crypto import VerificationError, canonical
 from crash_common import CASES, NONCLAIMS, POLICY, PROFILE, child_environment, load, packet_files, read, require, same, sha
 
 
-def selections(root, pins, names, withheld):
+def selections(root, pins, names, withheld, installed=None):
     """Bind the complete literal plan, source and artifact population externally.
 
     A member may be absent from disk only when the caller's withheld record names it
@@ -39,12 +39,17 @@ def selections(root, pins, names, withheld):
     for name, digest in manifest.items():
         if name not in absent:
             same(sha(read(root, name)), digest, "artifact-digest")
-    source_contract(plan, manifest)
+    source_contract(plan, manifest, installed)
     return plan
 
 
-def source_contract(plan, manifest):
-    """Require the declared sources and the selected installed verifier bytes."""
+def source_contract(plan, manifest, installed=None):
+    """Require the declared sources and the selected installed verifier bytes.
+
+    The plan pins the installed bytes the run was made with. When the caller selects ``installed`` (name to digest,
+    outside the packet), the installed bytes are checked against that selection instead, so a packet stays a record of
+    the run and the live readers may change under it.
+    """
     groups = {"joint": ["joint_common", "joint_run", "joint_worker", "joint_target", "joint_reader", "joint_host_gate"],
               "authority": ["authority_worker", "authority_common"],
               "langgraph": ["lg_common", "lg_run", "durable_worker"],
@@ -55,10 +60,13 @@ def source_contract(plan, manifest):
     same(sorted(plan["sources"]), sorted(name for name in manifest if name.startswith("sources/")), "source-population")
     for name, digest in plan["sources"].items():
         same(manifest[name], digest, "source-digest")
+    selected = plan["sources"] if installed is None else installed
+    if installed is not None:
+        same(sorted(installed), sorted(["sources/joint/joint_common.py", "sources/joint/joint_reader.py", "sources/crash/crash_common.py", "sources/crash/crash_reader.py"]), "installed-selection-population")
     for module, name in ((joint_common, "sources/joint/joint_common.py"), (joint_reader, "sources/joint/joint_reader.py")):
-        same(sha(Path(module.__file__).read_bytes()), plan["sources"][name], "selected-installed-dependency-source")
+        same(sha(Path(module.__file__).read_bytes()), selected[name], "selected-installed-dependency-source")
     for name in ("crash_common.py", "crash_reader.py"):
-        same(sha(Path(__file__).with_name(name).read_bytes()), plan["sources"]["sources/crash/" + name], "selected-installed-reader-source")
+        same(sha(Path(__file__).with_name(name).read_bytes()), selected["sources/crash/" + name], "selected-installed-reader-source")
 
 
 def snapshot(case, value, step, unfinished):
@@ -216,11 +224,11 @@ def verify_attempt(root, plan, case):
             "newRecoveryEffects": 0, "nativeRevision": 1}, pids
 
 
-def verify_saved(root, pins, withheld=None):
+def verify_saved(root, pins, withheld=None, installed=None):
     """Authenticate a complete selected run; refusal cases remain refused."""
     names = packet_files(root.absolute())
     root = root.resolve()
-    plan = selections(root, pins, names, withheld or {})
+    plan = selections(root, pins, names, withheld or {}, installed)
     rows, pids = [], []
     for case in plan["cases"]:
         row, identities = verify_attempt(root, plan, case)
@@ -240,11 +248,17 @@ def main():
     parser.add_argument("packet", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
     parser.add_argument("--withheld-sources", type=Path, default=None)
+    parser.add_argument("--installed-sources", type=Path, default=None)
     args = parser.parse_args()
     pins = args.pins_file.resolve(strict=True)
     require(not pins.is_relative_to(args.packet.resolve()), "selection-must-be-outside-packet")
     withheld = joint_common.withheld_sources(args.withheld_sources)
-    print(canonical(verify_saved(args.packet, load(pins.parent, pins.name), withheld)).decode(), end="")
+    installed = None
+    if args.installed_sources is not None:
+        selection = args.installed_sources.resolve(strict=True)
+        require(not selection.is_relative_to(args.packet.resolve()), "selection-must-be-outside-packet")
+        installed = load(selection.parent, selection.name)
+    print(canonical(verify_saved(args.packet, load(pins.parent, pins.name), withheld, installed)).decode(), end="")
 
 
 if __name__ == "__main__":

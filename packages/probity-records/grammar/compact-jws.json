@@ -1,0 +1,81 @@
+{
+  "text": "compact-jws",
+  "spec": "RFC 7515 compact serialization, as a token and a DPoP proof (RFC 9449): three non-empty ASCII segments joined by '.', each canonical unpadded base64url (one spelling per byte string); the header and the claims each one JSON object the strict reader admits. A member is used only in the JSON type its specification gives: alg, typ, kid, iss, sub, client_id, azp, jti, htm, htu, ath are strings; iat, exp, nbf are exact integers (integer.json); aud is a string or a list; cnf, act and jwk are objects; x5c is a list of one string. A member in another type names nothing: it is never turned into text.",
+  "readers": {
+    "python": [
+      "verified_identities._token",
+      "possession.check_dpop",
+      "identity.token_segments",
+      "identity.verify_token"
+    ],
+    "typescript": [
+      "verified.ts verifyToken",
+      "verified.ts checkDpop",
+      "verify.ts tokenSegments",
+      "verify.ts verifyPrincipalToken"
+    ]
+  },
+  "productions": {
+    "token-header": {
+      "members": {
+        "alg": "string",
+        "typ": "string or absent",
+        "kid": "string"
+      }
+    },
+    "token-claims": {
+      "members": {
+        "iss": "string",
+        "sub": "string",
+        "client_id": "string",
+        "azp": "string",
+        "aud": "string or list",
+        "iat": "exact-integer",
+        "exp": "exact-integer",
+        "nbf": "exact-integer",
+        "cnf": "object",
+        "act": "object"
+      }
+    },
+    "dpop-header": {
+      "members": {
+        "typ": "string",
+        "alg": "string",
+        "jwk": "object",
+        "x5c": "list of one string"
+      }
+    },
+    "dpop-claims": {
+      "members": {
+        "htm": "string",
+        "htu": "string",
+        "iat": "exact-integer",
+        "jti": "string",
+        "ath": "string",
+        "ans_content_digest": "string"
+      }
+    }
+  },
+  "otherTypes": [
+    "in-a-list",
+    "in-an-object",
+    "empty-list",
+    "empty-object",
+    "number",
+    "float",
+    "null",
+    "true",
+    "empty-text",
+    "past-exact-integer"
+  ],
+  "ownMembers": [
+    "__proto__",
+    "constructor",
+    "toString",
+    "hasOwnProperty"
+  ],
+  "derived": [
+    "each member of each document replaced by each of otherTypes, signed again",
+    "each object given each of ownMembers as an extra member, signed again"
+  ]
+}

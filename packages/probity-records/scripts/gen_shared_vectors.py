@@ -5,7 +5,8 @@ Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
 principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``standing_grants.json`` its standing
 grant chains, ``identities.json`` journals whose records name the parties to a call (the strict profile, the parties
-a permit's later records name, the approver an allow counts), ``canonical_identity.json`` the canonical identity
+a permit's later records name, the approver an allow counts), ``approvers.json`` journals whose approval two
+people gave and whose ``approver`` names each counted signer as a list, ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
 ``digests_vectors``, ``delegation.json`` the session-key certificates of ``delegation_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``, ``grant_bodies.json`` and
 ``grant_calls.json`` the grant body grammar and per-call cases of ``grant_body_vectors``. ``canonical.json`` holds bytes and the canonical
@@ -74,11 +75,16 @@ from probity_records.identity_vectors import (
     standing_grant_vectors,
 )
 from probity_records.identity_vectors import base as identity_base
+from probity_records.identity_vectors import second_approver as identity_second_approver
 from probity_records.identity_vectors import vectors as identity_vectors
+from probity_records.journal import GAP_TYPE, JOURNAL_SUBJECT, TORN_TAIL_TYPE
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
+    DEPUTY_DOMAIN,
+    VOTE_DOMAIN,
     approval_policy,
     count,
+    policy_digest,
     request_hash,
     sign_deputy,
     sign_vote,
@@ -251,6 +257,100 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
     return j
 
 
+# ---- quorum members in another JSON type, or named like a member every object inherits ----
+#
+# A vote, a delegation and the evidence are received JSON, so each member may hold any JSON value. These rows sign
+# such values exactly as written (the library's own signers take strings only) and record them as the evidence of a
+# quorum allow: a reader that turns the value into text, or looks a name up among inherited members, answers
+# otherwise than one that reads the type first.
+
+def raw_vote(signer: Signer, request: str = QREQ, **members: object) -> dict:
+    """A vote whose body holds ``members`` as written, signed by ``signer``; a member given as ``...`` is left out."""
+    body = {"approver": None, "decision": "approve", "expiresAt": EXP, "issuedAt": W["issued_at"], "policyId": "pay",
+            "requestHash": request, **members}
+    body = {k: v for k, v in body.items() if v is not ...}
+    return {"body": body, "sig": _b64(signer.sign(VOTE_DOMAIN + canonical(body)))}
+
+
+def raw_deputy(**members: object) -> dict:
+    """Bob's delegation to erin with ``members`` as written, signed by bob."""
+    body = {"delegator": "bob", "deputy": "erin", "deputyKey": raw_public(key("deputy-erin")), "expiresAt": EXP,
+            "notBefore": W["issued_at"], "policyId": "pay", "roles": ["finance"], **members}
+    return {"body": body, "sig": _b64(QKEYS["bob"].sign(DEPUTY_DOMAIN + canonical(body)))}
+
+
+def deputy_vote(delegation: dict, request: str = QREQ, **members: object) -> dict:
+    """Erin's vote on behalf of bob under ``delegation``, with ``members`` as written."""
+    vote_ = raw_vote(key("deputy-erin"), request, **{"approver": "erin", "onBehalfOf": "bob", "role": "finance",
+                                                    **members})
+    return {**vote_, "delegation": delegation}
+
+
+def quorum_raw_case(directory: Path, votes: object, *, proposer: object = "dave", request: str = QREQ,
+                    policy: object = None) -> Journal:
+    """A quorum allow whose evidence is written member by member, never through the counting reader."""
+    evidence = {"historyDigest": "ab" * 32, "kind": "quorum", "policy": POLICY if policy is None else policy,
+                "policyDigest": policy_digest(POLICY), "proposer": proposer, "requestHash": request, "votes": votes}
+    j = Journal(directory, GATE, clock=recording_clock())
+    j.append(TOOL_CALL_RECORD, "tool-call:q1", args_sha256(QARGS), tool_call_predicate(
+        phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=evidence, run_id="r1",
+        tool_call_id="q1", tool="pay", args_sha256_hex=args_sha256(QARGS), permit_id=QPID))
+    return j
+
+
+def quorum_typed_rows() -> list[tuple[str, str, object]]:
+    alice = vote("alice", "security")
+    named = request_hash("pay", args_sha256(QARGS), QPID, proposer="constructor", history="ab" * 32)
+    unnamed = request_hash("pay", args_sha256(QARGS), QPID, proposer=[], history="ab" * 32)  # type: ignore[arg-type]
+    return [
+        ("QV6", "a vote whose approver is a list holding an approver's name, signed by that approver",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver=["carol"], role="finance"), alice])),
+        ("QV7", "a vote whose approver is named constructor, a member every object inherits",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="constructor", role="finance"), alice])),
+        ("QV8", "a deputy's vote on behalf of a list holding the delegator's name",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(), onBehalfOf=["bob"]), alice])),
+        ("QV9", "the evidence's policy id is a list holding the pinned policy's id",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy={**POLICY, "policyId": ["pay"]})),
+        ("QV10", "the evidence's policy id is constructor, which no auditor pinned",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy={**POLICY, "policyId": "constructor"})),
+        ("QV11", "a proposer named constructor is no approver: one rejection leaves the quorum pending, not refused",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], named, approver="carol", role="finance",
+                                                decision="reject")], proposer="constructor", request=named)),
+        ("QV12", "a vote whose role is a list holding a role's name",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="carol", role=["finance"]), alice])),
+        ("QV13", "a deputy named constructor is not an approver, so the deputy's vote counts for bob",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(deputy="constructor"), approver="constructor"), alice])),
+        ("QV14", "a delegation whose deputy key is a number: the vote verifies under no key",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(deputyKey=7)), alice])),
+        ("QV15", "a deputy's role is a list, and the delegation lists that list",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(roles=[["finance"]]), role=["finance"]), alice])),
+        ("QV16", "a delegation whose roles are one text that only contains the role's name",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(roles="finance-and-more")), alice])),
+        ("QV17", "a vote with no decision",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="carol", role="finance", decision=...),
+                                       alice])),
+        ("QV18", "a vote whose decision is a list holding approve",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="carol", role="finance",
+                                                decision=["approve"]), alice])),
+        ("QV19", "a proposer-bound policy and a proposer that is an empty list, with every vote signed for it",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], unnamed, approver="carol", role="finance"),
+                                       raw_vote(QKEYS["alice"], unnamed, approver="alice", role="security")],
+                                   proposer=[], request=unnamed)),
+        ("QV20", "a deputy named erin votes for bob with every member a string: the control for QV8 and QV13 to QV16",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy()), alice])),
+        ("QV21", "the evidence's policy is the pinned policy's id as a text, not the policy",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy="pay")),
+        ("QV22", "the evidence's policy is a list holding the pinned policy",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy=[POLICY])),
+        ("QV23", "the evidence's votes are a number",
+         lambda d: quorum_raw_case(d, 7)),
+        ("QV24", "the evidence's votes are an object holding the two votes",
+         lambda d: quorum_raw_case(d, {"0": vote("carol", "finance"), "1": alice})),
+        ("QV25", "the evidence's votes are an empty text",
+         lambda d: quorum_raw_case(d, "")),
+    ]
+
+
 # ---- constraint edge cases: IPv6 CIDR, shell quoting, int vs float ----
 
 def solo_chain(tools: dict) -> list[dict]:
@@ -303,6 +403,16 @@ def constraint_rows() -> list[tuple[str, str, object]]:
             ["http://[2001:4860:4860::8888]/", "http://[::1]/", "http://[fe80::1]/", "http://[2001:db8::1]/",
              "http://[::ffff:10.0.0.1]/", "http://[::ffff:8.8.8.8]/", "http://8.8.8.8/", "http://224.0.0.1/",
              "http://100.64.0.1/", "http://192.0.0.9/", "http://198.18.0.1/", "http://localhost/"]),
+        row("CV12", "not_one_of [1]: true is never 1, and 1.0 is 1", {"type": "not_one_of", "values": [1]},
+            [True, False, 1, 1.0, 0]),
+        row("CV13", "not_one_of [true]: 1 is never true", {"type": "not_one_of", "values": [True]}, [1, True, 0, 1.0]),
+        row("CV14", "subset [1, 0]: a list of true or false is outside it, 1.0 is inside",
+            {"type": "subset", "values": [1, 0]}, [[True], [False], [1], [1.0, 0], [], [1, True]]),
+        row("CV15", "contains [1]: a list holding true does not hold 1, 1.0 does",
+            {"type": "contains", "values": [1]}, [[True], [1.0], [1, True], [0]]),
+        row("CV16", "not_one_of an object: member order and number spelling do not matter, true is never 1",
+            {"type": "not_one_of", "values": [{"a": 1, "b": True}]},
+            [{"b": True, "a": 1}, {"a": 1.0, "b": True}, {"a": True, "b": True}, {"a": 1, "b": 1}]),
     ]
 
 
@@ -884,6 +994,164 @@ def identity_rows() -> list[tuple[str, str, object]]:
     ]
 
 
+LOSS_STEP = "https://example.test/step"
+
+
+def loss_case(directory: Path, *, torn: bytes = b"", forged: tuple[str, dict] | None = None,
+              gap: dict | None = None) -> Journal:
+    """Two steps, then the loss a case names: a gap the producer states, torn bytes the next writer cuts with a signed
+    torn-tail line, or a loss line of a forged shape; then one more step."""
+    j = Journal(directory, GATE, clock=recording_clock())
+    for n in (1, 2):
+        j.append(LOSS_STEP, f"step-{n}", "ab" * 32, {"n": n})
+    if gap is not None:
+        j.gap(**gap)
+    if forged is not None:
+        j.append(forged[0], JOURNAL_SUBJECT, "00" * 32, forged[1])
+    if torn:
+        j.path.write_bytes(j.path.read_bytes() + torn)
+        j = Journal(directory, GATE, clock=recording_clock())  # the restarted writer
+    j.append(LOSS_STEP, "step-3", "ab" * 32, {"n": 3})
+    return j
+
+
+def loss_rows() -> list[tuple[str, str, object]]:
+    torn = {"afterSeq": 2, "bytes": 5, "tornSha256": "ab" * 32}
+    return [
+        ("LV1", "a gap line the producer signed between two steps: the journal holds, with the loss stated",
+         lambda d: loss_case(d, gap={"dropped": 3, "after_seq": 2, "reason": "ring_overflow"})),
+        ("LV2", "a restarted writer cut a torn last line and signed a torn-tail line before its next step",
+         lambda d: loss_case(d, torn=b'{"payload":"eyJ')),
+        ("LV3", "a gap line whose dropped count is a string", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": "five", "reason": "ring_overflow"}))),
+        ("LV4", "a gap line with a member the format does not define", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1, "reason": "ring_overflow", "note": "x"}))),
+        ("LV5", "a gap line whose dropped count is the number 1.0", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1.0, "reason": "ring_overflow"}))),
+        ("LV6", "a torn-tail line that places the loss at its own line", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "afterSeq": 3}))),
+        ("LV7", "a torn-tail line whose digest is upper-case hex", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "tornSha256": "AB" * 32}))),
+        ("LV8", "a torn-tail line that removed no bytes", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "bytes": 0}))),
+    ]
+
+
+APPROVAL_TWO_POLICY = approval_policy("refunds2of2", {WHO["ops"]: OPS.public_pem(), WHO["lead"]: LEAD.public_pem()},
+                                      2)  # fmt: skip
+
+
+def approvers_trust() -> tuple[Trust, dict]:
+    """The auditor of the approvers family: the identities family's pins and strict profile, a 1-of-2 and a 2-of-2
+    approval policy over the same two people."""
+    pins = identity_base()["pins"]
+    policies = {"refunds1of2": APPROVAL_IDP_POLICY, "refunds2of2": APPROVAL_TWO_POLICY}
+    trust = Trust(identity_profile="strict", identity_issuers={url: frozenset(t) for url, t in pins.items()},
+                  quorum_policies=policies)
+    return trust, {"identityProfile": "strict", "identityIssuers": pins, "quorumPolicies": policies}
+
+
+def approver_rows() -> list[tuple[str, str, object]]:
+    """An approval two people gave: ``approver`` names each counted signer, as a list of at least two principals."""
+    full = identity_base()["principals"]
+    carol = identity_second_approver()[0]
+
+    def named(*who: str) -> dict:
+        """The block naming ``who`` (keys of WHO); one name takes the single form."""
+        block = copy.deepcopy(full)
+        members = []
+        for n, w in enumerate(who):
+            member = copy.deepcopy(full["approver"] if n == 0 else carol)
+            member["subject"] = WHO[w]
+            members.append(member)
+        block["approver"] = members[0] if len(members) == 1 else members
+        return block
+
+    def two(*who: str) -> dict:
+        return identity_call("authorize", named(*who), decision="allow", reason="bound", threshold=2,
+                             approval_policy="refunds2of2",
+                             approval_bindings=[binding(OPS, WHO["ops"]), binding(LEAD, WHO["lead"])])  # fmt: skip
+
+    def deny_of_two(block: dict) -> dict:
+        """A deny resting on two people's denials; a deny counts nobody."""
+        bindings = [binding(OPS, WHO["ops"], approval={"outcome": "denied"}),
+                    binding(LEAD, WHO["lead"], approval={"outcome": "denied"})]
+        return identity_call("authorize", block, decision="deny", reason="approval_denied", threshold=1,
+                             approval_policy="refunds1of2", approval_bindings=bindings)
+
+    def refreshed(block: dict, index: int) -> dict:
+        """The block with one listed approver's credential refreshed: a new token, the same person."""
+        out = copy.deepcopy(block)
+        out["approver"][index]["tokenDigest"] = "ab" * 32
+        return out
+
+    def one_of_two(*who: str) -> dict:
+        return identity_call("authorize", named(*who), decision="allow", reason="bound", threshold=1,
+                             approval_policy="refunds1of2",
+                             approval_bindings=[binding(OPS, WHO["ops"]),
+                                                binding(LEAD, WHO["lead"], consumed=("appr-1",))])  # fmt: skip
+
+    def one_counted(block: dict) -> dict:
+        return identity_call("authorize", block, decision="allow", reason="bound", threshold=1,
+                             approval_policy="refunds1of2", approval_bindings=[binding(OPS, WHO["ops"])])
+
+    def spelled(reverse: bool) -> dict:
+        """The block whose approver is two strings that spell the single approver's issuer and subject: no
+        principal, so not the parties of any permit."""
+        out = named("ops")
+        pair = [out["approver"]["issuer"], WHO["ops"]]
+        out["approver"] = pair[::-1] if reverse else pair
+        return out
+
+    def issuers(block: dict, first: object, second: object) -> dict:
+        """The block with its listed approvers' issuers replaced, the member that sorts first by subject given
+        ``first``: one JSON number written two ways is one party in both readers, whichever member it is on."""
+        out = copy.deepcopy(block)
+        for member in out["approver"]:
+            member["issuer"] = first if member["subject"] == min(WHO["ops"], WHO["lead"]) else second
+        return out
+
+    return [
+        ("MA1", "a 2-of-2 approval and the allow names both approvers as a list: identity holds, strict",
+         lambda d: identity_case(d, [two("ops", "lead")])),
+        ("MA2", "a 2-of-2 approval and the allow names one of its approvers: below strict, approvers-partial",
+         lambda d: identity_case(d, [two("ops")])),
+        ("MA3", "the approver list names one person twice", lambda d: identity_case(d, [two("ops", "ops")])),
+        ("MA4", "the approver list names a person whose approval was a replay; the allow holds on the other",
+         lambda d: identity_case(d, [one_of_two("ops", "lead")])),
+        ("MA5", "the intent of a 2-of-2 allow names both approvers that allow counted: identity holds",
+         lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("ops", "lead"))])),
+        ("MA6", "the intent of a 2-of-2 allow names one of its approvers: below strict, and not the parties of its permit",
+         lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("lead"))])),
+        ("MA7", "a deny resting on two people's denials names one of them: a deny counts nobody, so it stays strict",
+         lambda d: identity_case(d, [deny_of_two(named("ops"))])),
+        ("MA8", "the intent names the allow's two approvers in the other order: the same parties, identity holds",
+         lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("lead", "ops"))])),
+        ("MA9", "one listed approver's credential is refreshed between the allow and the intent: the same parties",
+         lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", refreshed(named("ops", "lead"), 1))])),
+        ("MA10", ("the intent's approver is two strings, issuer then subject, of the allow's one approver: malformed, "
+                  "and not the parties of its permit"),
+         lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(False))])),
+        ("MA11", ("the intent's approver is the same two strings, subject then issuer: malformed, and not the parties "
+                  "of its permit"),
+         lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(True))])),
+        ("MA12", ("the allow's approvers carry the issuer 1.0 on the member that sorts first, the intent's 1: an issuer "
+                  "that is not a string is refused, and one number is the same parties"),
+         lambda d: identity_case(d, [identity_call("authorize", issuers(named("ops", "lead"), 1.0, 1), decision="allow",
+                                                   reason="bound", threshold=2, approval_policy="refunds2of2",
+                                                   approval_bindings=[binding(OPS, WHO["ops"]),
+                                                                      binding(LEAD, WHO["lead"])]),
+                                     identity_call("intent", issuers(named("ops", "lead"), 1, 1))])),
+        ("MA13", ("the allow's issuer 1e16 against the intent's 10000000000000000: one number, the same parties"),
+         lambda d: identity_case(d, [identity_call("authorize", issuers(named("ops", "lead"), 1e16, 10**16),
+                                                   decision="allow", reason="bound", threshold=2,
+                                                   approval_policy="refunds2of2",
+                                                   approval_bindings=[binding(OPS, WHO["ops"]),
+                                                                      binding(LEAD, WHO["lead"])]),
+                                     identity_call("intent", issuers(named("ops", "lead"), 10**16, 10**16))])),
+    ]
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -940,6 +1208,7 @@ def main(out: Path) -> None:
                 d, [erin, vote("alice", "security")])),
             ("QV5", "the record drops the proposer to let the proposer vote", lambda d: quorum_case(
                 d, [vote("carol", "finance"), vote("alice", "security")], proposer=None)),
+            *quorum_typed_rows(),
         ],
     }
     cases["autonomous"] = [
@@ -958,9 +1227,11 @@ def main(out: Path) -> None:
     cases["constraints"] = constraint_rows()
     cases["approvals"] = approval_rows()
     cases["identities"] = identity_rows()
+    cases["approvers"] = approver_rows()
     cases["effects"] = effect_rows()
+    cases["loss"] = loss_rows()
     trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
-    family_trust = {"autonomous": autonomous_trust(), "identities": identity_trust()}
+    family_trust = {"autonomous": autonomous_trust(), "identities": identity_trust(), "approvers": approvers_trust()}
     for family, rows in cases.items():
         out_rows = []
         auditor, auditor_doc = family_trust.get(family, (trust, trust_doc()))

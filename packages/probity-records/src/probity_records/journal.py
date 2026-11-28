@@ -11,7 +11,6 @@ rewritten journal.
 
 from __future__ import annotations
 
-import base64
 import fcntl
 import hashlib
 import json
@@ -24,7 +23,16 @@ from typing import Any
 
 from .authority import GRANT_ALLOW, Trust, check_authority
 from .clock import Clock, from_datetime, to_datetime
-from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
+from .core import (
+    admitted_loads,
+    call_args_of,
+    load_public,
+    open_envelope,
+    sign_envelope,
+    statement,
+    unb64,
+    value_key,
+)
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import body_problem, chain_digests, grant_digest, spend_of
 from .identifiers import identifier, same_identifier
@@ -36,6 +44,11 @@ from .signing import Delegation, verify_delegation
 
 GENESIS = "0" * 64
 CHECKPOINT_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-checkpoint")
+#: A producer's signed statement that ``dropped`` records it made never reached the journal, after line ``afterSeq``.
+GAP_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-gap")
+#: A writer's signed statement that it removed a torn last line (``bytes`` long, ``tornSha256``) after ``afterSeq``.
+TORN_TAIL_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-torn-tail")
+JOURNAL_SUBJECT = "tool-call-journal"
 JOURNAL_FILE = "journal.jsonl"
 #: Root-signed certificates for the session keys that signed lines of the journal (``signing.delegate``).
 KEYS_FILE = "keys.jsonl"
@@ -60,7 +73,7 @@ def _line_hash(line: bytes) -> str:
 
 
 def _payload(envelope: Mapping[str, Any]) -> dict[str, Any]:
-    return json.loads(base64.b64decode(envelope["payload"]))
+    return admitted_loads(unb64(envelope["payload"]))
 
 
 def _whole_lines(path: Path) -> tuple[list[bytes], int]:
@@ -94,8 +107,10 @@ class Journal:
     whose bytes an earlier fsync already covered does not fsync again.
     """
 
-    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock) -> None:
+    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock, run: str | None = None) -> None:
         self.directory = Path(directory)
+        self.run = run
+        self._torn: bytes | None = None
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
@@ -137,16 +152,18 @@ class Journal:
         size = self.path.stat().st_size if self.path.exists() else 0
         if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
             self._offset, self._seq, self._head, self._last_at = 0, 0, GENESIS, 0
+        self._torn = None
         if size > self._offset:
             with self.path.open("rb") as fh:
                 fh.seek(self._offset)
                 for line in fh:
                     if not line.endswith(b"\n"):
-                        break  # a torn tail from a crashed writer is not a line
+                        self._torn = line  # a torn tail from a crashed writer is not a line; append removes it
+                        break
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
-                        predicate = _payload(json.loads(body))["predicate"]
+                        predicate = _payload(admitted_loads(body))["predicate"]
                         self._seq = int(predicate["seq"])
                         self._head = _line_hash(body)
                         at = _at_ns(predicate.get("at"))
@@ -177,13 +194,11 @@ class Journal:
         with lock.open("a") as guard:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
-            body = statement(subject_name, subject_digest, predicate_type,
-                             {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
-            envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
-            line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
             try:
-                _cut_torn_tail(fd, self._offset)  # the refresh above stopped at the last whole line
+                if self._torn is not None:
+                    seq, head = self._remove_torn_tail(fd, seq)
+                envelope, line = self._line(predicate_type, subject_name, subject_digest, predicate, seq, head)
                 os.write(fd, line)
                 self._offset += len(line)
                 self._seq, self._head = seq + 1, _line_hash(line.rstrip(b"\n"))
@@ -194,16 +209,52 @@ class Journal:
                 os.close(fd)
         return envelope
 
+    def _line(self, predicate_type: str, subject_name: str, subject_digest: str, predicate: Mapping[str, Any],
+              seq: int, head: str) -> tuple[dict[str, Any], bytes]:
+        body = statement(subject_name, subject_digest, predicate_type,
+                         {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
+        envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
+        return envelope, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+
+    def _remove_torn_tail(self, fd: int, seq: int) -> tuple[int, str]:
+        """Cut the torn bytes a crashed writer left and append the signed line that says so, durable before the
+        caller's line: a torn tail leaves the file only with a statement of its length and digest."""
+        torn = self._torn or b""
+        os.ftruncate(fd, self._offset)
+        os.fsync(fd)
+        _, line = self._line(TORN_TAIL_TYPE, JOURNAL_SUBJECT, hashlib.sha256(torn).hexdigest(),
+                             {"afterSeq": seq, "bytes": len(torn), "tornSha256": hashlib.sha256(torn).hexdigest()},
+                             seq, self._head)
+        os.write(fd, line)
+        os.fsync(fd)
+        self._offset += len(line)
+        self._synced = max(self._synced, self._offset)
+        self._seq, self._head, self._torn = seq + 1, _line_hash(line.rstrip(b"\n")), None
+        return self._seq, self._head
+
+    def gap(self, *, dropped: int, after_seq: int, reason: str) -> dict[str, Any]:
+        """Append the signed statement that ``dropped`` records the producer made never reached the journal, lost
+        after line ``after_seq``. The producer states the loss it knows of; the journal never infers one."""
+        seq, _ = self._refresh()
+        if (isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 1
+                or isinstance(after_seq, bool) or not isinstance(after_seq, int) or not 0 <= after_seq <= seq
+                or not isinstance(reason, str) or not reason):  # fmt: skip
+            raise ValueError("journal_gap_invalid: dropped >= 1, 0 <= afterSeq <= the last line, a reason")
+        return self.append(GAP_TYPE, JOURNAL_SUBJECT, hashlib.sha256(reason.encode()).hexdigest(),
+                           {"afterSeq": after_seq, "dropped": dropped, "reason": reason})
+
     def statements(self) -> list[dict[str, Any]]:
         """The statements of every whole line; a torn tail from a writer killed mid-append is not one."""
-        return [_payload(json.loads(line)) for line in _whole_lines(self.path)[0] if line.strip()]
+        return [_payload(admitted_loads(line)) for line in _whole_lines(self.path)[0] if line.strip()]
 
     def checkpoint(self) -> dict[str, Any]:
         """A signed statement of the line count and head, for an outsider to pin."""
         seq, head = self._refresh()
-        body = statement("tool-call-journal", head, CHECKPOINT_TYPE,
-                         {"at": self._stamp(), "count": seq, "head": head,
-                          "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))})
+        predicate = {"at": self._stamp(), "count": seq, "head": head,
+                     "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))}
+        if self.run is not None:
+            predicate["run"] = self.run
+        body = statement(JOURNAL_SUBJECT, head, CHECKPOINT_TYPE, predicate)
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 
 
@@ -221,7 +272,7 @@ def _delegations(directory: Path, roots: list[Any], failures: list[str]) -> dict
         if not line.strip():
             continue
         try:
-            d = verify_delegation(json.loads(line), roots)
+            d = verify_delegation(admitted_loads(line), roots)
         except (ValueError, TypeError) as exc:
             failures.append(f"keys_line_{n}:session_key_delegation_invalid:{exc}")
             continue
@@ -241,25 +292,36 @@ NOT_RUN_RETRY = "not_run_retry"
 RETRY_REASONS = (RECONCILED_RETRY, NOT_RUN_RETRY)
 
 
-def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> set[str] | None:
-    """Check the approvals an authorize record rests on, and return the approvers it COUNTS: the only people an
-    approver principal may name. For an allow that is the approvers whose binding the reader allowed and whose
-    signature verified under the pinned policy, or the approving voters of a quorum that held; for a deny, every
-    approver whose binding it carries. None when no approval admitted the call (no approval, or none that holds)."""
+#: What an authorize record's approvals give its principals: (nameable, counted). ``nameable`` is who an approver
+#: principal may name, None when no approval admitted the call; ``counted`` is who the approval counted, every one of
+#: whom strict names. An allow's two are one set; a deny counts nobody, so its ``counted`` is empty.
+Approvers = tuple[set[str] | None, set[str] | None]
+
+
+def _same(counted: set[str] | None) -> Approvers:
+    return counted, counted
+
+
+def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> Approvers:
+    """Check the approvals an authorize record rests on, and return (nameable, counted). For an allow both are the
+    approvers it COUNTS: those whose binding the reader allowed and whose signature verified under the pinned
+    policy, or the approving voters of a quorum that held. For a deny, nameable is every approver whose binding it
+    carries and counted is empty: a deny counts nobody, so strict does not need each of them named. (None, None)
+    when no approval admitted the call (no approval, or none that holds)."""
     if pred.get("decision") == "allow":
         before = len(problems)
         if check_authority(pred, trust, problems, where):
-            return (_vote_signers(pred) or None) if len(problems) == before else None
+            return _same((_vote_signers(pred) or None) if len(problems) == before else None)
     bindings = pred.get("approvalBindings") or []
     if not bindings:
         # An allow with no approval is accepted only as the authority's signed statement that its
         # policy required none for this call; verify_journal counts these apart (policyAllows).
         if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, *RETRY_REASONS):
             problems.append(f"{where}:allow_without_approval_binding")
-        return None
+        return None, None
     reader_allowed: set[str] = set()
     for n, embedded in enumerate(bindings):
-        payload = base64.b64decode(embedded["payloadB64"])
+        payload = unb64(embedded["payloadB64"])  # core.unb64, as the TypeScript reader reads it
         if hashlib.sha256(payload).hexdigest() != pred.get("argsSha256"):
             problems.append(f"{where}:binding_{n}:approval_payload_is_not_the_call_arguments")
         verdict = judge_approval_binding(embedded["record"], payload)
@@ -269,16 +331,16 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
             problems.append(f"{where}:deny_reason_mismatch:{pred.get('reason')}:{verdict['reason']}")
     if pred.get("decision") != "allow":
         # A deny counts nobody; its approver principal may name any approver whose binding it carries.
-        return {str((b.get("record") or {}).get("approval", {}).get("approver")) for b in bindings}
+        return {str((b.get("record") or {}).get("approval", {}).get("approver")) for b in bindings}, set()
     # The M of N is re-counted under the quorum policy the AUDITOR pinned: the approver keys and the
     # threshold come from Trust, never from the record the authority wrote.
     if trust is None:
         problems.append(f"{where}:authority_trust_not_pinned:approval")
-        return None
+        return None, None
     policy = trust.quorum_policies.get(str(pred.get("approvalPolicyId")))
     if policy is None:
         problems.append(f"{where}:approval_policy_not_pinned")
-        return None
+        return None, None
     if pred.get("threshold") != policy["threshold"]:
         problems.append(f"{where}:threshold_not_pinned:{pred.get('threshold')}:{policy['threshold']}")
     signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked,
@@ -287,7 +349,7 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
     counted = signed & reader_allowed
     if len(counted) < policy["threshold"]:
         problems.append(f"{where}:approvals_below_threshold:{len(counted)}:{policy['threshold']}")
-    return counted or None
+    return _same(counted or None)
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:
@@ -319,8 +381,9 @@ def _vote_signers(pred: dict[str, Any]) -> set[str]:
     """The approving voters of the quorum an allow's authority carries (a deputy votes on behalf of its delegator).
     Called only once that quorum held, and a quorum with an invalid vote does not hold, so each was counted."""
     quorum = (pred.get("authority") or {}).get("quorum") or (pred.get("authority") or {})
+    votes = quorum.get("votes")
     return {str(v.get("body", {}).get("onBehalfOf", v.get("body", {}).get("approver")))
-            for v in quorum.get("votes") or []
+            for v in (votes if isinstance(votes, list) else [])  # the votes are a list; any other value holds none
             if isinstance(v, dict) and v.get("body", {}).get("decision") == "approve"}
 
 
@@ -394,7 +457,7 @@ def _revocation_problems(block: Mapping[str, Any], grade: str, at: str, trust: T
 
 
 def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str,
-                    seen: dict[str, dict[str, Any]], approvers: set[str] | None) -> None:  # fmt: skip
+                    seen: dict[str, dict[str, Any]], approvers: Approvers) -> None:  # fmt: skip
     if trust is None:
         problems.append(f"{where}:principals_but_no_trust_pinned")
         return
@@ -402,7 +465,8 @@ def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[st
     at = str(pred.get("at"))
     autonomous = isinstance(block, dict) and bool(set(block) & set(AUTONOMOUS))
     grants = _standing_grants(pred, trust, seen) if autonomous else None
-    found, grade = check_principals(block, at, trust.identity_issuers, approvers,
+    nameable, counted = approvers
+    found, grade = check_principals(block, at, trust.identity_issuers, nameable, counted=counted,
                                     sponsors=trust.agent_sponsors or None, standing_grants=grants)
     problems.extend(f"{where}:{p}" for p in found)
     if grade == "autonomous":
@@ -410,7 +474,7 @@ def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[st
     if grade is not None:
         problems.extend(f"{where}:{p}" for p in _revocation_problems(block, grade, at, trust))
     if grade is not None and trust.identity_profile == "strict" and grade not in ("strict", "autonomous"):
-        problems.append(f"{where}:principals_below_strict:{strict_shortfall(block, approvers)}")
+        problems.append(f"{where}:principals_below_strict:{strict_shortfall(block, nameable, counted)}")
 
 
 def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[str, dict[str, Any]]) -> None:
@@ -423,7 +487,7 @@ def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | None,
                 delegations: Mapping[str, Delegation], seen: dict[str, dict[str, Any]],
-                counted: dict[str, set[str] | None]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
+                counted: dict[str, Approvers]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
     problems: list[str] = []
     where = f"line_{i}"
     try:
@@ -454,7 +518,7 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
                 counted.setdefault(pid, approvers)
         else:
             # An intent or effect answers to the allow its permit rests on: the approvers that allow counted.
-            approvers = counted.get(pid)
+            approvers = counted.get(pid, (None, None))
         if pred.get("principals") is not None:
             _check_identity(pred, trust, problems, where, seen, approvers)
         elif pred.get("phase") == "authorize" and trust is not None and trust.identity_profile == "strict":
@@ -464,11 +528,46 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         problems.extend(approval_problems)
         if pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
+    elif same_identifier(body.get("predicateType"), GAP_TYPE) or same_identifier(body.get("predicateType"),
+                                                                                  TORN_TAIL_TYPE):
+        problems.extend(f"{where}:{p}" for p in _loss_problems(body, i))
     elif same_identifier(body.get("predicateType"), GOVERNANCE_STEP):
         policies = trust.quorum_policies if trust else None
         revoked = trust.key_revoked if trust else None
         problems.extend(f"{where}:{p}" for p in check_step(pred, policies, str(pred.get("at")), revoked))
     return body, problems
+
+
+def _count(value: Any, low: int) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= low
+
+
+def _loss_problems(body: Mapping[str, Any], line: int) -> list[str]:
+    """A gap or torn-tail line holds exactly its members: a count of at least one and a position before itself."""
+    pred = body.get("predicate", {})
+    if same_identifier(body.get("predicateType"), GAP_TYPE):
+        members, code = {"afterSeq", "dropped", "reason", "at", "prev", "seq"}, "journal_gap_invalid"
+        shape = _count(pred.get("dropped"), 1) and isinstance(pred.get("reason"), str) and bool(pred.get("reason"))
+    else:
+        members, code = {"afterSeq", "bytes", "tornSha256", "at", "prev", "seq"}, "journal_torn_tail_invalid"
+        digest = pred.get("tornSha256")
+        shape = (_count(pred.get("bytes"), 1) and isinstance(digest, str) and len(digest) == 64
+                 and all(c in "0123456789abcdef" for c in digest))  # fmt: skip
+    if set(pred) != members or not shape or not _count(pred.get("afterSeq"), 0) or pred["afterSeq"] >= line:
+        return [code]
+    return []
+
+
+def _loss_report(bodies: list[tuple[int, dict[str, Any]]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """The gap and torn-tail lines of a journal, in order, for the report."""
+    gaps, torn = [], []
+    for i, body in bodies:
+        pred = body.get("predicate", {})
+        if same_identifier(body.get("predicateType"), GAP_TYPE) and not _loss_problems(body, i):
+            gaps.append({"afterSeq": pred["afterSeq"], "dropped": pred["dropped"], "line": i, "reason": pred["reason"]})
+        elif same_identifier(body.get("predicateType"), TORN_TAIL_TYPE) and not _loss_problems(body, i):
+            torn.append({"afterSeq": pred["afterSeq"], "bytes": pred["bytes"], "line": i})
+    return gaps, torn
 
 
 def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | None, Any]]:
@@ -478,7 +577,7 @@ def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | Non
     if not isinstance(evidence, Mapping) or evidence.get("kind") != "grant":
         return []
     try:
-        args = admitted_loads(base64.b64decode(evidence.get("argsB64", ""))) if evidence.get("argsB64") else None
+        args = call_args_of(evidence)[1]
         return [(grant_digest(g["body"]), g["body"].get("budget"), args) for g in evidence.get("chain", [])
                 if body_problem(g["body"]) is None]
     except (ValueError, KeyError, TypeError):
@@ -525,12 +624,25 @@ def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: st
     return "not_run_retry_but_an_effect_may_have_happened"
 
 
-def _parties(block: Any) -> dict[str, Any] | None:
+def _party(p: Any) -> bytes:
+    """One party's key: a principal (any object) is its issuer and subject, as an object, so a refreshed credential is
+    the same party and a list of two strings that spell the pair is not (a member that is not an object never prints
+    as an object). The key is ``value_key``: one JSON value, one key, whatever its member order or number spelling."""
+    if isinstance(p, dict):
+        return value_key({"issuer": p.get("issuer"), "subject": p.get("subject")})
+    return value_key(p)
+
+
+def _parties(block: Any) -> dict[str, bytes | tuple[bytes, ...]] | None:
     """Who a principals block names, role by role (issuer and subject). A credential may be refreshed between a
-    permit's records; the parties may not change."""
+    permit's records; the parties may not change. An approver list is the multiset of its members' parties, in no
+    order: sorted by key, so the verdict never depends on the order the writer listed them in, and two lists are the
+    same parties exactly when each member has one equal member in the other (the TypeScript twin reads the same
+    keys)."""
     if not isinstance(block, dict):
         return None
-    return {role: (p.get("issuer"), p.get("subject")) if isinstance(p, dict) else p for role, p in block.items()}
+    return {role: tuple(sorted(_party(m) for m in p)) if isinstance(p, list) else _party(p)
+            for role, p in block.items()}
 
 
 def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[str]:
@@ -628,7 +740,7 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
         failures.append("key_custody_checkpoint_missing")
         return
     try:
-        provenance = json.loads(base64.b64decode(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
+        provenance = admitted_loads(unb64(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
     except (KeyError, TypeError, ValueError):
         return  # the checkpoint check reports the malformed envelope
     roots = {delegations[k].root_key_id if k in delegations else k for k in signer_ids}
@@ -641,7 +753,8 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
 
 def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
                    checkpoint_env: Mapping[str, Any] | None = None,
-                   trust: Trust | None = None, witnessed_checkpoint: str | None = None) -> dict[str, Any]:
+                   trust: Trust | None = None, witnessed_checkpoint: str | None = None,
+                   run: str | None = None) -> dict[str, Any]:
     """Verify a journal offline: every signature, the chain, the checkpoint, and both published
     readers re-run on every embedded record. Reports the denominator (``verified`` of ``records``).
 
@@ -651,9 +764,10 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     have cosigned ``witnessed_checkpoint`` (``witness_policy``): a journal the customer's witness did
     not cosign then fails, offline, whatever else holds.
 
-    A record is a whole line, up to its newline, as the writer and the witness tree count it. Bytes after the
-    last newline are an append a writer killed mid-write never finished: not a record, and reported as
-    ``tornTailBytes`` (the writer's next append cuts them).
+    Loss is reported, never inferred: ``dropped`` sums the signed gap lines, ``gaps`` and ``tornTails`` list them.
+    A record is a whole line, up to its newline, as the writer and the witness tree count it. Bytes after the last
+    newline are an append a writer killed mid-write never finished: not a record, reported as ``tornTail`` and
+    ``tornTailBytes``, and they keep the verdict from ``PASS``. ``run`` pins the run the checkpoint must name.
     """
     roots = _keys(public_pems)
     p = Path(path)
@@ -669,7 +783,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     outcomes: dict[str, int] = {}
     policy_allows = 0
     seen: dict[str, dict[str, Any]] = {}  # grant bodies of the authority chains verified so far, by digest
-    counted: dict[str, set[str] | None] = {}  # permit id -> the approvers its first allow counted
+    counted: dict[str, Approvers] = {}  # permit id -> the approvers its first allow counted
     for i, line in enumerate(lines, 1):
         body, problems = _check_line(i, line, keys, prev, trust, delegations, seen, counted)
         prev = _line_hash(line.encode())
@@ -700,6 +814,8 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
                 checkpoint = "mismatch"
             else:
                 checkpoint = "matches"
+            if run is not None and cp.get("run") != run:
+                failures.append(f"checkpoint_run_mismatch:{cp.get('run')}:{run}")
         except (ValueError, KeyError, TypeError) as exc:
             failures.append(f"checkpoint_invalid:{exc}")
             checkpoint = "invalid"
@@ -708,8 +824,12 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         witnessed = _check_witnessed(witnessed_checkpoint, lines, trust, failures)
     if trust is not None and trust.key_custody:
         _check_custody(checkpoint_env, signer_ids, delegations, trust, failures)
+    gaps, torn_lines = _loss_report(bodies)
+    torn_tail = {"afterSeq": len(lines), "bytes": torn} if torn else None
     if failures:
         verdict = "FAIL"
+    elif torn_tail is not None:
+        verdict = "NOT_ESTABLISHED"  # a writer died mid-line: what it was writing is not in the journal
     elif witnessed is not None and witnessed["status"] != "verified":
         verdict = "NOT_ESTABLISHED"  # the tail past the witnessed size rests on the authority alone
     elif checkpoint != "matches":
@@ -718,4 +838,5 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         verdict = "PASS"
     return {"verdict": verdict, "records": len(lines), "verified": verified, "failures": failures,
             "checkpoint": checkpoint, "witnessed": witnessed, "outcomes": outcomes, "policyAllows": policy_allows,
+            "dropped": sum(g["dropped"] for g in gaps), "gaps": gaps, "tornTails": torn_lines, "tornTail": torn_tail,
             "tornTailBytes": torn, "statements": [body for _, body in bodies]}

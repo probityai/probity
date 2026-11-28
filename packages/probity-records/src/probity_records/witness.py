@@ -22,7 +22,6 @@ filippo.io/torchwood, an independent implementation on Go's crypto/mldsa.
 from __future__ import annotations
 
 import base64
-import binascii
 import hashlib
 import os
 import re
@@ -47,6 +46,7 @@ from cryptography.hazmat.primitives.asymmetric.mldsa import (
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .clock import NS_PER_S, Clock
+from .core import is_utf8_text, unb64
 
 SIG_ED25519 = 0x01
 SIG_COSIGNATURE_V1 = 0x04
@@ -145,15 +145,43 @@ def verify_consistency(old: int, new: int, old_root: bytes, new_root: bytes, pro
     return fr == old_root and sr == new_root and sn == 0
 
 
+def inclusion_proof(index: int, leaves: Sequence[bytes]) -> list[bytes]:
+    """RFC 9162 section 2.1.3.1 PATH(index, leaves) over leaf HASHES; ``[]`` for an index outside the tree."""
+    n = len(leaves)
+    if not 0 <= index < n or n == 1:
+        return []
+    k = _split(n)
+    if index < k:
+        return inclusion_proof(index, leaves[:k]) + [root(leaves[k:])]
+    return inclusion_proof(index - k, leaves[k:]) + [root(leaves[:k])]
+
+
+def verify_inclusion(index: int, size: int, leaf: bytes, proof: Sequence[bytes], tree_root: bytes) -> bool:
+    """RFC 9162 section 2.1.3.2: ``leaf`` (a leaf HASH) is at ``index`` of the tree of ``size`` with ``tree_root``."""
+    if type(index) is not int or type(size) is not int or not 0 <= index < size:
+        return False
+    fn, sn, r = index, size - 1, leaf
+    for p in proof:
+        if sn == 0:
+            return False
+        if fn & 1 or fn == sn:
+            r = node_hash(p, r)
+            while not fn & 1 and fn != 0:
+                fn >>= 1
+                sn >>= 1
+        else:
+            r = node_hash(r, p)
+        fn >>= 1
+        sn >>= 1
+    return sn == 0 and r == tree_root
+
+
 # ---- signed notes ---------------------------------------------------------------------------------
 def b64decode_canonical(text: str) -> bytes:
     try:
-        raw = base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise NoteError(f"not base64: {text!r}") from exc
-    if base64.b64encode(raw).decode() != text:
-        raise NoteError(f"non-canonical base64: {text!r}")
-    return raw
+        return unb64(text)
+    except ValueError as exc:
+        raise NoteError(f"not canonical base64: {text!r}") from exc
 
 
 def parse_decimal(text: str, what: str) -> int:
@@ -163,7 +191,7 @@ def parse_decimal(text: str, what: str) -> int:
 
 
 def valid_name(name: str) -> bool:
-    return (bool(name) and len(name.encode()) <= 255 and "+" not in name
+    return (is_utf8_text(name) and bool(name) and len(name.encode()) <= 255 and "+" not in name
             and not any(ch.isspace() or ord(ch) < 0x20 for ch in name))
 
 
@@ -249,6 +277,8 @@ class Note:
 
 
 def parse_note(note: str) -> Note:
+    if not is_utf8_text(note):
+        raise NoteError("a signed note is UTF-8 text")
     if any(ord(ch) < 0x20 and ch != "\n" for ch in note):
         raise NoteError("a signed note holds no control character but newline")
     split = note.rfind("\n\n")
@@ -283,6 +313,8 @@ class Checkpoint:
 
 
 def parse_checkpoint(text: str) -> Checkpoint:
+    if not is_utf8_text(text):
+        raise NoteError("a checkpoint is UTF-8 text")
     if not text.endswith("\n"):
         raise NoteError("checkpoint text ends in a newline")
     lines = text[:-1].split("\n")
@@ -391,7 +423,7 @@ _POLICY_BYTES = re.compile(rb"[\t\n\x20-\x7e\x80-\xff]*\Z")
 
 
 def parse_policy(text: str) -> Policy:
-    if not _POLICY_BYTES.match(text.encode()):
+    if not is_utf8_text(text) or not _POLICY_BYTES.match(text.encode()):
         raise NoteError("a policy holds no control character but tab and newline")
     policy, keys = Policy(), set()
 
@@ -540,7 +572,7 @@ class Witness:
             for f in self.state_dir.glob("*.state"):
                 size, root_b64 = f.read_text().split()
                 origin = bytes.fromhex(f.stem).decode()
-                self._latest[origin] = (int(size), base64.b64decode(root_b64))
+                self._latest[origin] = (int(size), unb64(root_b64))
 
     @property
     def vkey(self) -> VerifierKey:

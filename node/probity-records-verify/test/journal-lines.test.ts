@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { journalLines, verifyJournal } from "../src/verify.ts";
+import { journalLines, verifyJournal, verifyJournalText } from "../src/verify.ts";
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
@@ -25,5 +25,15 @@ test("a shared journal with a torn tail verifies as the journal without it", () 
       assert.equal(tornTailBytes, cut);
       assert.deepEqual(verifyJournal(lines, v.keys, v.checkpoint, v.trust), v.expected, `${v.id} cut ${cut}`);
     }
+  }
+});
+
+test("torn bytes still on disk keep a journal from PASS, as the Python verifier does", () => {
+  for (const v of [...load("grants.json"), ...load("loss.json")]) {
+    const whole = v.journal.map((line: string) => line + "\n").join("");
+    assert.deepEqual(verifyJournalText(whole, v.keys, v.checkpoint, v.trust), { ...v.expected, tornTailBytes: 0 }, v.id);
+    const torn = verifyJournalText(whole + '{"payload":"eyJ', v.keys, v.checkpoint, v.trust);
+    const verdict = v.expected.verdict === "PASS" ? "NOT_ESTABLISHED" : v.expected.verdict;
+    assert.deepEqual(torn, { ...v.expected, verdict, tornTailBytes: 15 }, v.id);
   }
 });

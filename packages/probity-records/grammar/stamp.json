@@ -1,0 +1,121 @@
+{
+  "text": "stamp-fields",
+  "spec": "RFC 8941 Structured Field Values, the subset RFC 9421 signatures read, and RFC 9110 section 5.5 field values. A field value is read after removing leading and trailing space and tab, and nothing else. A Byte Sequence is the rule of the released Python reader (agent-evidence-verify structured_fields): the text between the colons matches byteSequence.pattern, its length is not 1 modulo 4, and without its padding its length is not 1 modulo 4; stray low bits are accepted (RFC 8941 section 4.2.7). Order: the three structured fields (signature-input, signature, content-digest) all parse before any member is read; then the parameters; then the key.",
+  "readers": {
+    "python": [
+      "stamp.verify_stamp",
+      "stamp.presented_key_id",
+      "agent_evidence_verify.structured_fields"
+    ],
+    "typescript": [
+      "verified.ts verifyStamp",
+      "sf.ts"
+    ]
+  },
+  "productions": {
+    "field-value": {
+      "ows": " \t",
+      "notOws": [
+        "\u001c",
+        "\u001d",
+        "\u001e",
+        "\u001f",
+        "\u000b",
+        "\f",
+        "\u0085",
+        "\u00a0",
+        "\u1680",
+        "\u2028",
+        "\u2029",
+        "\u3000",
+        "\ufeff"
+      ]
+    },
+    "byte-sequence": {
+      "pattern": "[A-Za-z0-9+/]*={0,2}",
+      "refusal": "stamp_malformed",
+      "accept": [
+        [
+          "",
+          ""
+        ],
+        [
+          "AA==",
+          "00"
+        ],
+        [
+          "AA",
+          "00"
+        ],
+        [
+          "AA=",
+          "00"
+        ],
+        [
+          "AB==",
+          "00"
+        ],
+        [
+          "AAA=",
+          "0000"
+        ],
+        [
+          "AAA",
+          "0000"
+        ],
+        [
+          "AAB=",
+          "0000"
+        ],
+        [
+          "AAAA",
+          "000000"
+        ],
+        [
+          "AAAAAA==",
+          "00000000"
+        ],
+        [
+          "AAAAAA",
+          "00000000"
+        ],
+        [
+          "/+8=",
+          "ffef"
+        ],
+        [
+          "AAAA==",
+          "000000"
+        ]
+      ],
+      "refuse": [
+        "A",
+        "A=",
+        "A==",
+        "AAAA=",
+        "AAAAA",
+        "AAAAA=",
+        "AAAAA==",
+        "AAAAA===",
+        "AA===",
+        "====",
+        "A A=",
+        "AA\n==",
+        "_-8=",
+        "AA=A",
+        "=AA=",
+        "AAA\u00e9",
+        "QUJD\u0000"
+      ]
+    },
+    "order": {
+      "fields": [
+        "signature-input",
+        "signature",
+        "content-digest"
+      ],
+      "unreadable": "@@@",
+      "refusal": "stamp_malformed"
+    }
+  }
+}

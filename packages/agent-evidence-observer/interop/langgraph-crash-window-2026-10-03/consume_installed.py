@@ -9,25 +9,48 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "joint-recovery-2026-10-02"))
 from joint_host_gate import reader_closure  # noqa: E402
-from crash_common import NONCLAIMS, PROFILE, child_environment, load, require, same, write  # noqa: E402
+from crash_common import NONCLAIMS, PROFILE, child_environment, load, read, require, same, write  # noqa: E402
 from probity_observer.crypto import strict_loads  # noqa: E402
 
+# Bound on the JSON nodes of the host's selected installed closure. It scales
+# with the reader install, unlike a packet. Measured 26 Nov 2026 on a CPython 3.13
+# `python -m venv` plus `pip install --require-hashes` of the joint reader lock (the
+# steps CI runs): 16,980 files, 67,927 nodes, 3.85 MB of canonical JSON (the file
+# size bound is 16 MiB). 131,072 is about 1.9 times that. The packet bound in
+# crash_common stays 16,384, because the packaged reader never reads a closure.
+MAX_CLOSURE_NODES = 131072
 
-def consume(packet, pins, reader, selected_closure, output, withheld=None):
+
+def load_closure(root, name):
+    """Parse the selected closure, bounding its node count and depth."""
+    value = strict_loads(read(root, name))
+    pending, seen = [(value, 0)], 0
+    while pending:
+        item, depth = pending.pop()
+        seen += 1
+        children = item.values() if type(item) is dict else item if type(item) is list else ()
+        require(depth <= 64 and seen + len(pending) + len(children) <= MAX_CLOSURE_NODES, "closure-json-bound")
+        pending.extend((child, depth + 1) for child in children)
+    return value
+
+
+def consume(packet, pins, reader, selected_closure, output, withheld=None, installed=None):
     """Refuse changed installation before launch; retain actual isolated streams."""
     root = packet.resolve(strict=True)
     reader = reader.absolute()
-    for selection in (pins, selected_closure, *([withheld] if withheld else [])):
+    for selection in (pins, selected_closure, *([withheld] if withheld else []), *([installed] if installed else [])):
         require(not selection.resolve(strict=True).is_relative_to(root), "selection-must-be-outside-packet")
     require(not output.resolve().is_relative_to(root), "consumer-receipts-outside-packet")
     output.mkdir(parents=True, exist_ok=False)
-    expected = load(selected_closure.parent, selected_closure.name)
+    expected = load_closure(selected_closure.parent, selected_closure.name)
     same(reader_closure(reader), expected, "reader-installed-closure")
     write(output / "selected-installed-closure.json", expected)
     write(output / "selected-pins.json", load(pins.parent, pins.name))
     command = [str(reader.parent / "python"), "-I", "-B", str(reader), str(root), "--pins-file", str(pins.resolve())]
     if withheld:
         command += ["--withheld-sources", str(withheld.resolve())]
+    if installed:
+        command += ["--installed-sources", str(installed.resolve())]
     timed_out = False
     try:
         result = subprocess.run(command, env=child_environment(), capture_output=True, timeout=30, check=False)
@@ -58,9 +81,11 @@ def main():
     parser.add_argument("--selected-closure", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--withheld-sources", type=Path, default=None)
+    parser.add_argument("--installed-sources", type=Path, default=None)
     args = parser.parse_args()
     from probity_observer.crypto import canonical
-    print(canonical(consume(args.packet, args.pins_file, args.reader, args.selected_closure, args.output, args.withheld_sources)).decode(), end="")
+    print(canonical(consume(args.packet, args.pins_file, args.reader, args.selected_closure, args.output, args.withheld_sources,
+                                    args.installed_sources)).decode(), end="")
 
 
 if __name__ == "__main__":

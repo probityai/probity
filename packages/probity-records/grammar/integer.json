@@ -1,0 +1,59 @@
+{
+  "text": "integer",
+  "spec": "A received JSON number used as an integer: an integer spelling (no fraction, no exponent), from -(2**53 - 1) to 2**53 - 1, the integers a double holds exactly. A boolean is not a number. Times are compared as integers: seconds times 10**6 against microseconds.",
+  "readers": {
+    "python": [
+      "core.exact_int"
+    ],
+    "typescript": [
+      "verify.ts exactInt"
+    ]
+  },
+  "productions": {
+    "exact-integer": {
+      "bounds": {
+        "min": -9007199254740991,
+        "max": 9007199254740991
+      },
+      "sites": {
+        "token.iat": "token_malformed",
+        "token.exp": "token_malformed",
+        "token.nbf": "token_malformed",
+        "dpop.iat": "dpop_malformed",
+        "record.iat": "possession_record_malformed"
+      },
+      "accept": [
+        0,
+        1,
+        -1,
+        9007199254740991,
+        -9007199254740991
+      ],
+      "refuse": [
+        9007199254740992,
+        9007199254740993,
+        -9007199254740992,
+        18446744073709551616,
+        10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        1.0,
+        1.5,
+        1e+300,
+        true,
+        false,
+        null,
+        "1",
+        "",
+        [
+          1
+        ],
+        {
+          "0": 1
+        }
+      ]
+    },
+    "decimal-digits": {
+      "pattern": "[0-9]{1,15}",
+      "note": "the only text a reader turns into a number, after its own grammar matched"
+    }
+  }
+}

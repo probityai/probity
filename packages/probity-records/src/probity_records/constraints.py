@@ -15,9 +15,9 @@ import re
 import shlex
 from collections.abc import Callable
 from typing import Any
-from urllib.parse import urlsplit
 
 from . import celexpr
+from .core import ascii_lower, decimal, value_key
 
 TYPES = ("wildcard", "exact", "one_of", "not_one_of", "range", "pattern", "regex", "cidr", "url_pattern",
          "url_safe", "subpath", "shlex", "contains", "subset", "all", "any", "not", "cel")
@@ -33,12 +33,34 @@ def _number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
+def same(a: Any, b: Any) -> bool:
+    """Whether two parsed JSON values are one JSON value, by ``core.value_key`` (the TypeScript twin's ``same`` reads the
+    same bytes): object members in any order are one object, ``3`` and ``3.0`` are one number, and ``true`` is never
+    ``1`` where Python's ``==`` calls them equal. A value jcs-admit refuses (a lone surrogate, NaN) equals nothing."""
+    try:
+        return value_key(a) == value_key(b)
+    except ValueError:
+        return False
+
+
+def _member(v: Any, values: list[Any]) -> bool:
+    return any(same(v, x) for x in values)
+
+
+def _keys(values: list[Any]) -> set[bytes] | None:
+    """The value keys of a list, or None when one of its values is one jcs-admit refuses."""
+    try:
+        return {value_key(x) for x in values}
+    except ValueError:
+        return None
+
+
 def _finite_values(c: dict[str, Any]) -> list[Any]:
     return [c["value"]] if c["type"] == "exact" else list(c["values"])
 
 
 def _host_ok(host: str, patterns: list[str]) -> bool:
-    return any(fnmatch.fnmatchcase(host, p.lower()) for p in patterns)
+    return any(fnmatch.fnmatchcase(host, ascii_lower(p)) for p in patterns)
 
 
 def _star_only(pattern: str) -> bool:
@@ -55,47 +77,66 @@ def _hosts_narrow(child: list[str], parent: list[str]) -> bool:
     return all(h in parent or (_star_only(h) and _host_ok(h, star_parents)) for h in child)
 
 
-_NUMERIC_LABEL = re.compile(r"0x[0-9a-f]*|[0-9]+")
-#: Percent escapes that decode to a path separator, a dot, or another escape: a server that decodes
-#: them before resolving dot segments reads a different path than the one the constraint checked.
-_PATH_ESCAPE = re.compile(r"%(?:2e|2f|5c|25)", re.IGNORECASE)
+#: ``grammar/constraint-url.json``: the one reader of a URL a constraint is asked about. Each pattern is the grammar
+#: file's, read with ``fullmatch`` (the twin anchors the same text), and none uses ``\d`` or a case-blind flag.
+URI_TEXT = re.compile(r"(?:[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*")
+URL = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*)://([^/?#]*)([^?#]*)(?:[?#].*)?")
+AUTHORITY = re.compile(r"(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.\-]+)(?::([1-9][0-9]{0,4}))?")
+HOST_LABEL = re.compile(r"[A-Za-z0-9\-]{1,63}")
+NUMERIC_LABEL = re.compile(r"[0-9]+|0[xX][0-9A-Fa-f]*")
+IPV4 = re.compile(r"(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(?:\.(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}")
+PATH = re.compile(r"(?:/(?!\.\.?(?:/|$))[^/]+)*/?")
+#: Percent escapes that decode to a dot, a path separator or another escape: a server that decodes them before it
+#: resolves dot segments reads a different path than the one the constraint checked.
+PATH_ESCAPE = re.compile(r"%(?:2[EeFf]|5[Cc]|25)")
+PORT_MAX = 65535
+HOST_MAX = 253
 
 
-def _inet_aton(host: str) -> ipaddress.IPv4Address | None:
-    """The IPv4 address a C resolver reads from a numeric host (``127.1``, ``0x7f.0.0.1``,
-    ``0177.0.0.1``, ``2130706433``), or None when the host is not all numeric labels."""
-    labels = host.split(".")
-    if not 1 <= len(labels) <= 4 or not all(_NUMERIC_LABEL.fullmatch(x) for x in labels):
+def url_parts(v: Any) -> tuple[str, str, int | None, str] | None:
+    """(scheme, host, port, path) of a URL ``grammar/constraint-url.json`` accepts, else None.
+
+    Scheme and host come back in ASCII lower case, an IPv6 literal without its brackets, an empty path as ``/``. No
+    platform URL parser reads the text: ``urlsplit`` and WHATWG URL parsing each repair what the other refuses, so the
+    twin ``urlParts`` and this function read the same grammar instead and refuse the same texts."""
+    if not isinstance(v, str) or not URI_TEXT.fullmatch(v):
         return None
-    values = []
-    for x in labels:
-        if x.startswith("0x"):
-            values.append(int(x[2:] or "0", 16))
-        elif len(x) > 1 and x.startswith("0"):
-            values.append(int(x, 8) if set(x) <= set("01234567") else -1)
-        else:
-            values.append(int(x))
-    *head, last = values
-    if any(not 0 <= v <= 255 for v in head) or not 0 <= last < 256 ** (5 - len(values)):
-        return ipaddress.IPv4Address(0)  # unparseable by every resolver: treated as private (refused)
-    number = 0
-    for v in head:
-        number = number * 256 + v
-    return ipaddress.IPv4Address(number * 256 ** (5 - len(values)) + last)
+    url = URL.fullmatch(v)
+    if url is None:
+        return None
+    authority = AUTHORITY.fullmatch(url[2])
+    path = url[3] or "/"
+    if authority is None or not PATH.fullmatch(path) or PATH_ESCAPE.search(path):
+        return None
+    host, port = ascii_lower(authority[1]), None
+    if authority[2] is not None:
+        port = decimal(authority[2])
+        if port > PORT_MAX:
+            return None
+    if host.startswith("["):
+        host = host[1:-1]
+        try:
+            ipaddress.IPv6Address(host)
+        except ValueError:
+            return None
+    else:
+        labels = host.split(".")
+        if len(host) > HOST_MAX or not all(HOST_LABEL.fullmatch(label) for label in labels):
+            return None
+        if NUMERIC_LABEL.fullmatch(labels[-1]) and not IPV4.fullmatch(host):
+            return None  # a host ending in a number is an IPv4 address; read only in its one canonical spelling
+    return ascii_lower(url[1]), host, port, path
 
 
 def _private_host(host: str) -> bool:
-    """True for loopback, link-local, private and reserved hosts in every notation a resolver accepts.
-    A DNS name that resolves to a private address is not visible here: the egress layer re-checks
+    """True for loopback, link-local, private and reserved hosts. ``host`` is one ``url_parts`` gave, so an address is
+    written in its one spelling (a dotted quad or an IPv6 literal); the other numeric notations a resolver reads are
+    refused before this is asked. A DNS name that resolves to a private address is not visible here: the egress layer re-checks
     the address it actually connects to."""
-    host = host.rstrip(".")
     if host in ("localhost", "localhost.localdomain") or host.endswith(".localhost"):
         return True
-    numeric = _inet_aton(host)
-    if numeric is not None:
-        return not numeric.is_global
     try:
-        ip = ipaddress.ip_address(host.strip("[]"))
+        ip = ipaddress.ip_address(host)
     except ValueError:
         return False
     return not ip.is_global
@@ -114,36 +155,21 @@ def _check_cidr(c: dict[str, Any], v: Any) -> bool:
         return False
 
 
-def _url_parts(v: Any) -> tuple[str, str, str] | None:
-    if not isinstance(v, str) or any(ch in v for ch in "\x00\r\n\t "):
-        return None
-    try:
-        parts = urlsplit(v)
-    except ValueError:
-        return None
-    if parts.username is not None or parts.password is not None or not parts.hostname:
-        return None
-    if "\\" in parts.path or _PATH_ESCAPE.search(parts.path):
-        return None  # an encoded separator, dot or escape: the path the server resolves is not this one
-    return parts.scheme.lower(), parts.hostname.lower(), parts.path or "/"
-
-
 def _check_url_pattern(c: dict[str, Any], v: Any) -> bool:
-    parts = _url_parts(v)
+    parts = url_parts(v)
     if parts is None:
         return False
-    scheme, host, path = parts
-    norm = posixpath.normpath(path) if path != "/" else "/"
+    scheme, host, _, path = parts
     prefix = c.get("pathPrefix", "/").rstrip("/")
     return (scheme in c["schemes"] and _host_ok(host, c["hosts"])
-            and (not prefix or norm == prefix or norm.startswith(prefix + "/")))
+            and (not prefix or path == prefix or path.startswith(prefix + "/")))
 
 
 def _check_url_safe(c: dict[str, Any], v: Any) -> bool:
-    parts = _url_parts(v)
+    parts = url_parts(v)
     if parts is None:
         return False
-    scheme, host, _ = parts
+    scheme, host, _, _ = parts
     if scheme not in c.get("schemes", ["https"]):
         return False
     if c.get("denyPrivate", True) and _private_host(host):
@@ -173,15 +199,15 @@ def _check_list(c: dict[str, Any], v: Any) -> bool:
     if not isinstance(v, list):
         return False
     if c["type"] == "contains":
-        return all(item in v for item in c["values"])
-    return all(item in c["values"] for item in v)
+        return all(_member(item, v) for item in c["values"])
+    return all(_member(item, c["values"]) for item in v)
 
 
 _CHECKS: dict[str, Callable[[dict[str, Any], Any], bool]] = {
     "wildcard": lambda c, v: True,
-    "exact": lambda c, v: v == c["value"] and type(v) is type(c["value"]),
-    "one_of": lambda c, v: any(v == x and type(v) is type(x) for x in c["values"]),
-    "not_one_of": lambda c, v: v not in c["values"],
+    "exact": lambda c, v: same(v, c["value"]) and type(v) is type(c["value"]),
+    "one_of": lambda c, v: any(same(v, x) and type(v) is type(x) for x in c["values"]),
+    "not_one_of": lambda c, v: _keys([v]) is not None and not _member(v, c["values"]),
     "range": _check_range,
     "pattern": lambda c, v: isinstance(v, str) and fnmatch.fnmatchcase(v, c["pattern"]),
     "regex": lambda c, v: isinstance(v, str) and re.fullmatch(c["regex"], v) is not None,
@@ -281,6 +307,12 @@ def check(c: dict[str, Any], value: Any) -> bool:
     return _CHECKS[c["type"]](c, value)
 
 
+def _contained(inner: list[Any], outer: list[Any]) -> bool:
+    """Whether every value of ``inner`` is a value of ``outer``, by value key."""
+    inner_keys, outer_keys = _keys(inner), _keys(outer)
+    return inner_keys is not None and outer_keys is not None and inner_keys <= outer_keys
+
+
 def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
     kind = parent["type"]
     if kind == "range":
@@ -306,18 +338,17 @@ def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
         return (set(child.get("schemes", ["https"])) <= set(parent.get("schemes", ["https"])) and hosts_ok
                 and (child.get("denyPrivate", True) or not parent.get("denyPrivate", True)))
     if kind in ("shlex", "subset"):
-        return set(map(repr, child["allow" if kind == "shlex" else "values"])) <= set(
-            map(repr, parent["allow" if kind == "shlex" else "values"]))
+        return _contained(child["allow" if kind == "shlex" else "values"], parent["allow" if kind == "shlex" else "values"])
     if kind in ("contains", "not_one_of"):
-        return set(map(repr, parent["values"])) <= set(map(repr, child["values"]))
-    return child == parent  # regex, not, cel: only an identical constraint is provably no wider
+        return _contained(parent["values"], child["values"])
+    return same(child, parent)  # regex, not, cel: only an identical constraint is provably no wider
 
 
 def narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
     """True only when every value ``child`` admits is provably admitted by ``parent``."""
     validate(child)
     validate(parent)
-    if parent["type"] == "wildcard" or child == parent:
+    if parent["type"] == "wildcard" or same(child, parent):
         return True
     if child["type"] in FINITE:
         return all(check(parent, v) for v in _finite_values(child))

@@ -9,9 +9,11 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import hmac
 import json
+import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 import jcs_admit
 from cryptography.exceptions import InvalidSignature
@@ -55,13 +57,29 @@ def _refuse_inexact_ints(value: Any, depth: int = 0) -> None:
             _refuse_inexact_ints(item, depth + 1)
 
 
-def _jcs(raw: bytes) -> bytes:
-    """jcs-admit over ``raw``; a refusal is ``ValueError("jcs_refused:<native variant>")``, the code
-    the TypeScript twin reports for the same input."""
+#: The deepest nesting, in containers, a token segment or a registry document may have; a JWT header and claim set
+#: are flat objects with a few nested claims, so this is generous and a hostile document cannot reach the recursion
+#: limit of any reader.
+TOKEN_MAX_DEPTH: Final = 32
+
+
+class JsonRefused(ValueError):
+    """jcs-admit refused the bytes: ``str`` is ``jcs_refused:<native variant>``, the code the TypeScript twin reports
+    for the same input, and ``variant`` is the variant alone (``TooDeep``, ``StringNotScalar``, ``DuplicateMember``,
+    ``Syntax``, ``NonFiniteNumber`` and the rest), so a caller maps it to its own registered refusal code."""
+
+    def __init__(self, variant: str) -> None:
+        super().__init__(f"jcs_refused:{variant}")
+        self.variant = variant
+
+
+def _jcs(raw: bytes, *, max_depth: int = jcs_admit.DEFAULT_MAX_DEPTH,
+         max_bytes: int | None = jcs_admit.DEFAULT_MAX_BYTES) -> bytes:  # fmt: skip
+    """jcs-admit over ``raw``; a refusal is ``JsonRefused``."""
     try:
-        return jcs_admit.admit(raw)
+        return jcs_admit.admit_with(raw, max_depth=max_depth, max_bytes=max_bytes)
     except jcs_admit.JcsError as exc:
-        raise ValueError(f"jcs_refused:{exc.variant}") from exc
+        raise JsonRefused(exc.variant) from exc
 
 
 def canonical(value: Any) -> bytes:
@@ -75,16 +93,86 @@ def canonical(value: Any) -> bytes:
     return _jcs(raw.encode("ascii"))
 
 
-def admitted_loads(raw: bytes | str) -> Any:
-    """Parse RECEIVED bytes after jcs-admit has read them raw.
+def value_key(value: Any) -> bytes:
+    """The RFC 8785 bytes of a parsed JSON value, as a key that sorts and compares it.
 
-    A duplicate member, invalid UTF-8 and a lone surrogate (raw or escaped) are refused before
-    ``json.loads`` can keep the last duplicate or decode the bytes into something other than what
-    was signed. The TypeScript twin's ``parseReceived`` does the same.
+    Two values have one key exactly when they are one JSON value: object members in any order are one object, and a
+    number is its IEEE double, so ``1.0`` and ``1``, and ``1e16`` and ``10000000000000000``, are one number, as
+    JavaScript's parse reads them (the TypeScript twin's ``valueKey`` gives the same bytes). Unlike ``canonical`` it
+    does not refuse an integer beyond the exact range: received bytes were admitted, and jcs-admit reads every number
+    as a double. ``true`` is never ``1``.
+    """
+    return _jcs(json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("ascii"))
+
+
+def admitted_loads(raw: bytes | str, *, max_depth: int = jcs_admit.DEFAULT_MAX_DEPTH,
+                   max_bytes: int | None = jcs_admit.DEFAULT_MAX_BYTES) -> Any:  # fmt: skip
+    """Parse RECEIVED bytes after jcs-admit has read them raw: the package's one reader of untrusted JSON.
+
+    A duplicate member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds and nesting
+    deeper than ``max_depth`` containers are refused, as ``JsonRefused``, before ``json.loads`` can keep the last
+    duplicate, recurse past the interpreter's limit or decode the bytes into something other than what was signed.
+    A value this returns therefore encodes as UTF-8 and re-serializes without error. ``max_bytes`` None removes the
+    size cap for a caller that bounds its input itself. The TypeScript twin's ``parseReceived`` does the same.
     """
     data = raw.encode("utf-8", "surrogatepass") if isinstance(raw, str) else bytes(raw)
-    _jcs(data)
+    _jcs(data, max_depth=max_depth, max_bytes=max_bytes)
     return json.loads(data)
+
+
+def is_utf8_text(text: Any) -> bool:
+    """True for a string that encodes as UTF-8, False for a lone surrogate or a value that is not a string.
+
+    ``str.encode()`` raises ``UnicodeEncodeError`` on a lone surrogate. Text a verifier receives as bytes or JSON
+    never holds one, but a ``str`` handed in directly can, so a verifier asks this before it encodes.
+    """
+    if not isinstance(text, str):
+        return False
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def exact_int(value: Any) -> bool:
+    """Whether a received JSON value is an integer both readers hold exactly (``grammar/integer.json``): an ``int``,
+    never a ``bool``, within 2**53 - 1 either side of zero. JavaScript reads 2**53 and 2**53 + 1 as one number, so a
+    larger integer has two readings."""
+    return isinstance(value, int) and not isinstance(value, bool) and -MAX_EXACT_INT <= value <= MAX_EXACT_INT
+
+
+_DECIMAL = re.compile(r"[0-9]{1,15}")
+
+
+def decimal(text: str) -> int:
+    """The number a run of the digits 0 to 9 writes (at most 15 of them); ``ValueError`` for any other text.
+
+    Every number a reader takes from received text comes through here, after the text matched its grammar: ``int`` alone
+    also reads other scripts' digits, a sign, spaces and underscores, and refuses a run of more than 4300 digits."""
+    if not isinstance(text, str) or not _DECIMAL.fullmatch(text):
+        raise ValueError("decimal takes 1 to 15 of the digits 0 to 9")
+    return int(text)
+
+
+def ascii_lower(text: str) -> str:
+    """``text`` with A to Z in lower case and every other character unchanged: ``str.lower`` also maps characters
+    outside ASCII, by a table that is not JavaScript's."""
+    return text.translate(_ASCII_LOWER)
+
+
+_ASCII_LOWER = {c: c + 32 for c in range(ord("A"), ord("Z") + 1)}
+
+
+def same_text(a: Any, b: Any) -> bool:
+    """Constant-time equality of two strings of any text; False when either is not a string.
+
+    ``hmac.compare_digest`` on two ``str`` raises ``TypeError`` for a character outside ASCII and for a value that is
+    not a string, and a received claim or digest can be either, so a verifier compares through this instead.
+    """
+    if not isinstance(a, str) or not isinstance(b, str):
+        return False
+    return hmac.compare_digest(a.encode("utf-8", "surrogatepass"), b.encode("utf-8", "surrogatepass"))
 
 
 def canonical_of_received(raw: bytes) -> bytes:
@@ -176,7 +264,11 @@ def _b64(data: bytes) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
-def _unb64(text: Any) -> bytes:
+def unb64(text: Any) -> bytes:
+    """The bytes of padded standard base64 text, read only in its canonical spelling: ``ValueError`` for anything
+    else (a value that is not a string, a missing or extra ``=``, a byte outside the alphabet, stray low bits in the
+    last digit). Every reader of received base64 goes through this one rule, as the TypeScript twin's ``unb64`` does,
+    so a text one reader decodes the other never refuses."""
     if not isinstance(text, str):
         raise ValueError("expected base64 text")
     try:
@@ -186,6 +278,18 @@ def _unb64(text: Any) -> bytes:
     if _b64(data) != text:
         raise ValueError("expected canonical base64")
     return data
+
+
+def call_args_of(evidence: Any) -> tuple[bytes, Any]:
+    """The bytes and the parsed value of the call arguments an authority block carries as ``argsB64``.
+
+    An absent member or ``""`` is a call with no arguments, ``(b"", None)``. Otherwise the member is read with
+    ``unb64`` (canonical base64 only) and the bytes with ``admitted_loads``, so ``ValueError`` covers every value that
+    is not the arguments a call carried. The TypeScript twin ``callArgsOf`` reads by the same rules."""
+    if not isinstance(evidence, dict) or "argsB64" not in evidence:
+        return b"", None
+    raw = unb64(evidence["argsB64"])
+    return raw, (admitted_loads(raw) if raw else None)
 
 
 def sign_envelope(signer: Any, payload: bytes, payload_type: str = IN_TOTO_PAYLOAD_TYPE) -> dict[str, Any]:
@@ -204,7 +308,9 @@ def open_envelope(envelope: Any, keys: list[Ed25519PublicKey],
     if not isinstance(envelope, dict) or not {"payload", "payloadType", "signatures"} <= envelope.keys():
         raise ValueError("envelope_shape")
     kind = envelope["payloadType"]
-    payload = _unb64(envelope["payload"])
+    if not is_utf8_text(kind):
+        raise ValueError("envelope_shape")
+    payload = unb64(envelope["payload"])
     entries = envelope["signatures"]
     if not isinstance(entries, list) or not entries:
         raise ValueError("envelope_shape")
@@ -212,7 +318,7 @@ def open_envelope(envelope: Any, keys: list[Ed25519PublicKey],
     for key in keys:
         for entry in entries:
             try:
-                key.verify(_unb64(entry.get("sig") if isinstance(entry, dict) else None), pre)
+                key.verify(unb64(entry.get("sig") if isinstance(entry, dict) else None), pre)
             except (InvalidSignature, ValueError):
                 continue
             if kind != payload_type:
@@ -246,7 +352,7 @@ def verify_approval(signed: Any, approver_pems: dict[str, bytes]) -> dict[str, A
     if pem is None:
         return None
     try:
-        load_public(pem).verify(_unb64(signed.get("sig")), APPROVAL_DOMAIN + canonical(body))
+        load_public(pem).verify(unb64(signed.get("sig")), APPROVAL_DOMAIN + canonical(body))
     except (InvalidSignature, ValueError):
         return None
     return body
@@ -286,7 +392,7 @@ def verify_permit(permit: Any, authority_pem: bytes) -> dict[str, Any] | None:
     message = PERMIT_DOMAIN + canonical(permit["claims"])
     for key in keys:
         try:
-            key.verify(_unb64(permit.get("sig")), message)
+            key.verify(unb64(permit.get("sig")), message)
         except (InvalidSignature, ValueError):
             continue
         return permit["claims"]

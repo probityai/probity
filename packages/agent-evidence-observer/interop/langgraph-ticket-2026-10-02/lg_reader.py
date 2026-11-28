@@ -20,7 +20,8 @@ from probity_observer.aae_ticket_records import (
     verify_aae_ticket_result,
 )
 from probity_observer.crypto import canonical, digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
+from probity_observer import retained_grants
 from probity_observer.ticket_state import (
     DOMAIN,
     checked_record,
@@ -227,7 +228,7 @@ def effect_packet(case: dict[str, Any], packet: dict[str, Any], now: datetime) -
         require(state["effectId"] == expected, "pending-effect-identity")
         return
     same(packet["postStatus"], 200, "completion-response-status")
-    verify_aae_ticket_result(**case["decision"], receipt=packet["response"], readback=packet["readback"], request=request, policy=policy, service_key=case["serviceKey"], grant=case["grant"], now=now)
+    verify_aae_ticket_result(**case["decision"], receipt=packet["response"], readback=packet["readback"], request=request, policy=policy, service_key=case["serviceKey"], grant=case["grant"], now=now, grant_verifier=retained_grants)
 
 
 def verify_saved(root: Path, pins: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:

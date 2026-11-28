@@ -16,7 +16,7 @@ Every identity digest is the text `sha256:` followed by 64 lowercase hexadecimal
 
 | function | input | digest of |
 |---|---|---|
-| `principals_digest(block)` | the verified principals block of one request | the block as recorded: an object whose members are among `user`, `agent`, `sponsor`, `approver`, each an object (the principal member of the tool-call record) |
+| `principals_digest(block)` | the verified principals block of one request | the block as recorded: an object whose members are among `user`, `agent`, `sponsor`, `approver`, each an object (the principal member of the tool-call record), except that `approver` may be an array of at least two such objects (an approval several people gave). An approver list is a set: its members are hashed sorted by their RFC 8785 bytes (byte order of the UTF-8), so one set of approvers has one digest in any written order |
 | `act_chain_digest(act)` | the RFC 8693 `act` claim of the user's credential | the claim as its identity provider signed it: an object naming the current actor in a non-empty string `sub`, its `act` member the prior actor, at most 32 actors |
 | `grant_chain_digest(links)` | the capability grant links a request runs under, root first | the JSON array of the links' grant digests, root first, each the 64-digit hex `grant_digest` of the link's body |
 | `stamp_digest(principals, act, grants)` | three digests, `act` and `grants` optional | the object `{"act": act, "grants": grants, "principals": principals}`, with null for an absent act claim or grant chain |

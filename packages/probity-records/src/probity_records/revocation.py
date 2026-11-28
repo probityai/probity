@@ -46,11 +46,11 @@ from .core import (
     MAX_EXACT_INT,
     Signer,
     _b64,
-    _unb64,
     canonical,
     key_id,
     load_public,
     sha256_hex,
+    unb64,
     verify_approval,
 )
 from .grants import raw_public, ts
@@ -114,13 +114,11 @@ def _time(value: Any, what: str) -> str:
 
 def _raw_key(value: Any, what: str) -> bytes:
     try:
-        raw = _unb64(value)
+        raw = unb64(value)
     except ValueError:
         raise _shape(f"{what}_not_base64") from None
     if len(raw) != 32:
         raise _shape(f"{what}_not_an_ed25519_key")
-    if _b64(raw) != value:
-        raise _shape(f"{what}_not_canonical_base64")
     return raw
 
 
@@ -328,11 +326,11 @@ class RevocationState:
             raise _shape("signed_list_members")
         body = signed["body"]
         _check_body(body)
-        key = load_public(_unb64(body["issuerKey"]))
+        key = load_public(unb64(body["issuerKey"]))
         if key_id(key) not in self.roots:
             raise RevocationError("revocation_list_signer_not_a_root")
         try:
-            sig = _unb64(signed["sig"])
+            sig = unb64(signed["sig"])
             if len(sig) != 64 or _b64(sig) != signed["sig"]:
                 raise ValueError("signature is not the canonical base64 of 64 bytes")
             key.verify(sig, REVOCATION_DOMAIN + canonical(body))
@@ -360,7 +358,7 @@ class RevocationState:
         # successors of the roots this list revokes join unless an earlier list revoked them, then every key id this
         # list revokes leaves, so a successor the same list revokes does not stay either.
         revoked_keys = {ident for kind, ident in delta if kind == "key"}
-        successors = {key_id(load_public(_unb64(e["successor"]))) for (kind, ident), e in delta.items()
+        successors = {key_id(load_public(unb64(e["successor"]))) for (kind, ident), e in delta.items()
                       if kind == "key" and ident in self.roots and "successor" in e}
         successors = {kid for kid in successors if ("key", kid) not in held}
         roots = (self.roots | successors) - revoked_keys

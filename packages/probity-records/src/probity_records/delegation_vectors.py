@@ -180,11 +180,11 @@ def check(rows: list[dict[str, Any]]) -> list[str]:
     """The vector ids whose verdict this package does not reproduce from the file's own bytes."""
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-    from .core import _unb64
+    from .core import unb64
 
     bad = []
     for row in rows:
-        roots = [Ed25519PublicKey.from_public_bytes(_unb64(r)) for r in row["roots"]]
+        roots = [Ed25519PublicKey.from_public_bytes(unb64(r)) for r in row["roots"]]
         try:
             d = verify_delegation(row["certificate"], roots)
             got: dict[str, Any] = {"delegation": {**d.scope.members(), "notAfter": d.not_after,

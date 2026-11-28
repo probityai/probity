@@ -17,7 +17,7 @@ from probity_observer.crypto import (
     strict_loads,
     verify_signature,
 )
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
     READBACK_FIELDS,

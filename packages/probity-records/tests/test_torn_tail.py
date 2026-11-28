@@ -1,8 +1,9 @@
 """A writer killed mid-append leaves a torn last line: every reader skips it, the next append cuts it first.
 
-An append is durable on return, so a torn tail is the bytes of an append that never returned: nothing acted on
-it. Each append-only file the package writes (journal.jsonl, keys.jsonl, checkpoints.log) is cut back to its last
-whole entry, under the lock and fsynced, before the next entry is written; each reader stops at the last whole line.
+Each append-only file the package writes (journal.jsonl, keys.jsonl, checkpoints.log) is cut back to its last whole
+entry, under the lock and fsynced, before the next entry is written; each reader stops at the last whole line. The
+journal never loses the cut silently: while the torn bytes are on disk the verifier reports them and withholds PASS,
+and the append that cuts them first writes a signed torn-tail line naming their length and digest.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from probity_records import Journal, Signer, verify_journal
 from probity_records import journal as journal_mod
 from probity_records import witness as w
 from probity_records.clock import FixedClock, from_datetime
-from probity_records.journal import JOURNAL_FILE, KEYS_FILE
+from probity_records.journal import JOURNAL_FILE, KEYS_FILE, TORN_TAIL_TYPE
 from probity_records.otel import AuditStream, export_journal
 from probity_records.signing import DelegationScope, delegate
 
@@ -52,6 +53,12 @@ def _seqs(path: Path) -> list[int]:
     return [journal_mod._payload(json.loads(line))["predicate"]["seq"] for line in path.read_bytes().splitlines()]
 
 
+def _types(path: Path) -> list[str]:
+    """The predicate type of every line: ``TYPE`` for a caller's line, ``torn`` for the writer's torn-tail line."""
+    types = [journal_mod._payload(json.loads(line))["predicateType"] for line in path.read_bytes().splitlines()]
+    return ["torn" if t == TORN_TAIL_TYPE else "step" if t == TYPE else t for t in types]
+
+
 @pytest.mark.parametrize("cut", range(3))
 def test_statements_skip_a_torn_tail(tmp_path: Path, cut: int) -> None:
     signer = Signer.generate()
@@ -64,13 +71,15 @@ def test_statements_skip_a_torn_tail(tmp_path: Path, cut: int) -> None:
 def test_the_next_append_cuts_the_torn_tail_and_the_journal_verifies(tmp_path: Path, cut: int) -> None:
     signer = Signer.generate()
     _append(Journal(tmp_path, signer, clock=CLOCK), 4)
-    _tear(tmp_path / JOURNAL_FILE, _cuts(tmp_path / JOURNAL_FILE)[cut])
+    torn = _tear(tmp_path / JOURNAL_FILE, _cuts(tmp_path / JOURNAL_FILE)[cut])
     restarted = Journal(tmp_path, signer, clock=CLOCK)
     _append(restarted, 1, start=99)
-    assert _seqs(tmp_path / JOURNAL_FILE) == [1, 2, 3, 4]
-    assert [s["predicate"]["i"] for s in restarted.statements()] == [0, 1, 2, 99]
+    assert _seqs(tmp_path / JOURNAL_FILE) == [1, 2, 3, 4, 5]
+    assert _types(tmp_path / JOURNAL_FILE) == ["step", "step", "step", "torn", "step"]
+    assert [s["predicate"].get("i") for s in restarted.statements()] == [0, 1, 2, None, 99]
     out = verify_journal(tmp_path, [signer.public_pem()], restarted.checkpoint())
-    assert (out["verdict"], out["records"], out["verified"], out["tornTailBytes"]) == ("PASS", 4, 4, 0), out["failures"]
+    assert (out["verdict"], out["records"], out["verified"], out["tornTailBytes"]) == ("PASS", 5, 5, 0), out["failures"]
+    assert out["tornTails"] == [{"afterSeq": 3, "bytes": len(torn), "line": 4}]
 
 
 def test_an_instance_that_saw_the_torn_tail_before_its_first_append_also_cuts_it(tmp_path: Path) -> None:
@@ -81,7 +90,8 @@ def test_an_instance_that_saw_the_torn_tail_before_its_first_append_also_cuts_it
     assert [s["predicate"]["seq"] for s in restarted.statements()] == [1, 2]
     restarted.checkpoint()  # a read that refreshes the cached head past the whole lines only
     _append(restarted, 2, start=10)
-    assert _seqs(tmp_path / JOURNAL_FILE) == [1, 2, 3, 4]
+    assert _seqs(tmp_path / JOURNAL_FILE) == [1, 2, 3, 4, 5]
+    assert _types(tmp_path / JOURNAL_FILE) == ["step", "step", "torn", "step", "step"]
 
 
 def test_the_torn_tail_is_cut_under_the_lock_and_fsynced_before_the_line_is_written(
@@ -123,8 +133,11 @@ def test_the_torn_tail_is_cut_under_the_lock_and_fsynced_before_the_line_is_writ
     assert events[cut] == ("ftruncate", whole)
     assert locked < cut < synced < wrote
     assert ("flock", fcntl.LOCK_UN) in events[wrote:]
+    # the signed torn-tail line is durable before the caller's line is written
+    assert [e[0] for e in events[wrote:wrote + 3]] == ["write", "fsync", "write"]
     monkeypatch.undo()
-    assert _seqs(path) == [1, 2]
+    assert _seqs(path) == [1, 2, 3]
+    assert _types(path) == ["step", "torn", "step"]
 
 
 def test_a_whole_journal_is_never_cut(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,7 +158,8 @@ def test_verify_journal_does_not_count_a_torn_tail_and_reports_it(tmp_path: Path
     _append(journal, 1, start=3)
     torn = _tear(tmp_path / JOURNAL_FILE, 30)
     out = verify_journal(tmp_path, [signer.public_pem()], checkpoint)
-    assert (out["verdict"], out["records"], out["verified"]) == ("PASS", 3, 3), out["failures"]
+    # line 4's append had returned: torn bytes on disk are a lost write, never a clean journal
+    assert (out["verdict"], out["records"], out["verified"], out["failures"]) == ("NOT_ESTABLISHED", 3, 3, [])
     assert out["tornTailBytes"] == len(torn)
     # the writer's own checkpoint over the same file agrees with the verifier's count
     after_crash = Journal(tmp_path, signer, clock=CLOCK).checkpoint()

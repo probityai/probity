@@ -34,14 +34,15 @@ verifier received. The format and its reasons are in ``docs/verified-identities.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import secrets
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Final
-from urllib.parse import urlsplit
 
-from agent_evidence_verify import structured_fields as sf
+from agent_evidence_verify import structured_fields as sf  # type: ignore[import-untyped]
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
@@ -50,8 +51,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
-from .core import sha256_hex
+from .core import admitted_loads, ascii_lower, canonical, sha256_hex, unb64
 from .digests import is_digest, stamp_digest
+from .possession import http_uri_parts, uri_authority
+from .signing import verify_delegation
 
 #: The four request fields of a stamp (lower case: field names compare case-insensitively).
 PRINCIPALS_HEADER: Final = "probity-principals"
@@ -64,12 +67,16 @@ LABEL: Final = "probity"
 COVERED: Final = ("@method", "@target-uri", "@authority", CONTENT_DIGEST_HEADER, PRINCIPALS_HEADER)
 ALG: Final = "ed25519"
 TAG: Final = "probity-principals/v1"
+#: The field carrying the certificate of the window key the stamp was signed with (base64 of its canonical JSON).
+WINDOW_FIELD: Final = "probity-stamp-window"
 PARAMS: Final = ("created", "expires", "nonce", "keyid", "alg", "tag")
 PRINCIPALS_MEMBERS: Final = ("id", "client", "principals")
 #: The longest lifetime a stamp may carry; a stamp names one request, so it is never a standing credential.
 MAX_TTL_SECONDS: Final = 300
 MAX_NONCE_BYTES: Final = 128
-_DEFAULT_PORTS: Final = {"http": 80, "https": 443}
+#: The optional whitespace around a field value (RFC 9110 section 5.5): space and tab. Stripping with no argument
+#: also removes U+001C to U+001F and every Unicode space, which JavaScript's ``trim`` does not.
+OWS: Final = " \t"
 
 
 class StampRefused(ValueError):
@@ -198,15 +205,10 @@ def content_digest(body: bytes | None) -> str:
 
 def authority(target_uri: str) -> str:
     """The RFC 9421 ``@authority`` of a target URI: the host in lower case, the port only when it is not the default."""
-    parts = urlsplit(target_uri)
-    if parts.scheme not in _DEFAULT_PORTS or not parts.hostname or parts.username is not None or parts.fragment:
-        raise ValueError(f"a stamped target is an absolute http(s) URI with a host and no userinfo or fragment: "
-                         f"{target_uri[:120]!r}")  # fmt: skip
-    host = parts.hostname.lower()
-    if ":" in host:
-        host = f"[{host}]"
-    port = parts.port
-    return host if port is None or port == _DEFAULT_PORTS[parts.scheme] else f"{host}:{port}"
+    scheme, host, port, _, rest = http_uri_parts(target_uri)  # one reader of a target URI, with the TypeScript twin
+    if "#" in rest:
+        raise ValueError(f"a stamped target carries no fragment: {target_uri[:120]!r}")
+    return uri_authority(scheme, host, port)
 
 
 def _params_member(created: int, expires: int, nonce: str, keyid: str) -> sf.InnerList:
@@ -219,8 +221,8 @@ def signature_base(*, method: str, target_uri: str, content_digest_value: str, p
                    params: sf.InnerList) -> bytes:  # fmt: skip
     """The RFC 9421 section 2.5 signature base of a stamp over one request."""
     lines = [f'"@method": {method}', f'"@target-uri": {target_uri}', f'"@authority": {authority(target_uri)}',
-             f'"{CONTENT_DIGEST_HEADER}": {content_digest_value.strip()}',
-             f'"{PRINCIPALS_HEADER}": {principals_value.strip()}',
+             f'"{CONTENT_DIGEST_HEADER}": {content_digest_value.strip(OWS)}',
+             f'"{PRINCIPALS_HEADER}": {principals_value.strip(OWS)}',
              f'"@signature-params": {sf.serialize_inner_list(params)}']  # fmt: skip
     base = "\n".join(lines)
     if not base.isascii() or any(c in base for c in "\r\0"):
@@ -259,8 +261,8 @@ def stamp_fields(headers: Headers) -> dict[str, str] | None:
     member belongs to another signer and is not a stamp."""
     found: dict[str, list[str]] = {}
     for name, value in _pairs(headers):
-        if name.lower() in STAMP_HEADERS:
-            found.setdefault(name.lower(), []).append(value)
+        if ascii_lower(name) in STAMP_HEADERS:  # A to Z only: a platform's lower-casing also maps other characters
+            found.setdefault(ascii_lower(name), []).append(value)
     repeated = sorted(name for name, values in found.items() if len(values) > 1)
     if repeated:
         raise StampRefused("stamp_repeated", "given more than once: " + ", ".join(repeated))
@@ -303,7 +305,7 @@ def _params(member: Any) -> tuple[int, int, str, str]:
     for name in ("nonce", "keyid"):
         if not isinstance(p[name], str) or isinstance(p[name], sf.Token) or not p[name]:
             raise StampRefused("stamp_header_invalid", f"{name} is a non-empty String")
-    if len(p["nonce"].encode("ascii")) > MAX_NONCE_BYTES:
+    if not p["nonce"].isascii() or len(p["nonce"]) > MAX_NONCE_BYTES:
         raise StampRefused("stamp_header_invalid", f"nonce is at most {MAX_NONCE_BYTES} bytes")
     return p["created"], p["expires"], p["nonce"], p["keyid"]
 
@@ -353,14 +355,63 @@ def verify_stamp(headers: Headers, *, method: str, target_uri: str, body: bytes 
         Ed25519PublicKey.from_public_bytes(public_raw).verify(signature.value, base)
     except (InvalidSignature, ValueError) as exc:
         raise StampRefused("stamp_forged", "the signature does not verify over this request under the pinned key") from exc
-    moment = now / NS_PER_S
     if expires <= created:
         raise StampRefused("stamp_malformed", "expires is not after created")
     if expires - created > MAX_TTL_SECONDS:
         raise StampRefused("stamp_lifetime_too_long", f"{expires - created} s")
-    if created > moment:
+    # Integers against integers: created and expires are whole seconds, ``now`` is nanoseconds.
+    if created * NS_PER_S > now:
         raise StampRefused("stamp_not_yet_valid", "created is in the future")
-    if moment >= expires:
+    if now >= expires * NS_PER_S:
         raise StampRefused("stamp_expired", "expires has passed")
     return VerifiedStamp(Stamp.from_field(fields[PRINCIPALS_HEADER]), nonce, expires)
 
+
+
+def window_field(certificate: Mapping[str, Any]) -> str:
+    """The ``probity-stamp-window`` value: base64 of the certificate's canonical JSON."""
+    return base64.b64encode(canonical(dict(certificate))).decode("ascii")
+
+
+def window_certificate(headers: Headers) -> dict[str, Any]:
+    """The window certificate a request's ``probity-stamp-window`` field carries; StampRefused ``stamp_window_missing``
+    without the field, ``stamp_window_malformed`` unless it is base64 of the canonical JSON of an object."""
+    values = [value for name, value in _pairs(headers) if ascii_lower(name) == WINDOW_FIELD]
+    if not values:
+        raise StampRefused("stamp_window_missing", "the stamp carries no window certificate")
+    if len(values) > 1:
+        raise StampRefused("stamp_window_malformed", "the window field is given more than once")
+    try:
+        raw = unb64(values[0])
+        certificate = admitted_loads(raw)  # the one strict reader: deep nesting or a lone surrogate is refused
+        if not isinstance(certificate, dict) or canonical(certificate) != raw:
+            raise ValueError("not canonical")
+    except ValueError as exc:  # binascii.Error, JsonRefused and a value JCS cannot print are all ValueError
+        raise StampRefused("stamp_window_malformed", "the window field is base64 of a canonical certificate") from exc
+    return certificate
+
+
+def verify_stamp_in_window(headers: Headers, *, method: str, target_uri: str, body: bytes | None,
+                           roots: Sequence[Ed25519PublicKey], now: int) -> VerifiedStamp:  # fmt: skip
+    """A stamp signed by a window key: the certificate in ``probity-stamp-window`` must verify under one of the pinned
+    ``roots`` (a ``probity-key-delegation/v2`` certificate), the stamp's ``created`` must fall in the certificate's
+    half-open window [notBefore, notAfter), and the stamp must then verify under the certificate's session key: the
+    ``keyid`` a stamp names is compared with that key and never used to find one. ``now`` is in nanoseconds."""
+    fields = stamp_fields(headers)
+    if fields is None:
+        raise StampRefused("stamp_dropped", "the request carries no stamp")
+    certificate = window_certificate(headers)
+    created = _params(_dictionaries(fields)[0][LABEL])[0]
+    try:
+        window = verify_delegation(certificate, list(roots))
+    except ValueError as exc:
+        raise StampRefused("stamp_window_refused", str(exc)) from exc
+    try:
+        at = datetime.fromtimestamp(created, UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    except (OverflowError, OSError, ValueError):
+        at = ""
+    if not window.covers(at):
+        raise StampRefused("stamp_window_outside", f"created {created} is outside [{window.not_before}, "
+                           f"{window.not_after})")  # fmt: skip
+    return verify_stamp(headers, method=method, target_uri=target_uri, body=body,
+                        public_raw=window.session.public_bytes_raw(), now=now)  # fmt: skip

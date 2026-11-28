@@ -7,13 +7,14 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from probity_observer import retained_grants
 from probity_observer.crypto import (
     VerificationError,
     canonical,
     strict_loads,
     verify_signature,
 )
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import DOMAIN, verify_ticket_result
 
 from probity_pydantic_recovery.common import (
@@ -121,7 +122,7 @@ def historical(root: Path, case: dict[str, Any]) -> dict[str, Any]:
     """Re-check the committed native store and signed retained prior effect."""
     from datetime import datetime
     prior = load(root / "parent-prior-readback.json")
-    verified = verify_ticket_result(prior["receipt"], prior, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["historicalTime"]))
+    verified = verify_ticket_result(prior["receipt"], prior, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["historicalTime"]), grant_verifier=retained_grants)
     database = root / "committed.sqlite"
     with sqlite3.connect(database.resolve().as_uri() + "?mode=ro&immutable=1", uri=True) as connection:
         connection.execute("PRAGMA query_only=ON")
@@ -244,7 +245,7 @@ def historical_effect(case: dict[str, Any], packet: dict[str, Any]) -> dict[str,
     candidate = {key: case[key] for key in ("request", "grant", "contentHex")}
     require(packet["postRequestHex"] == canonical(candidate).hex(), "historical-post-binding")
     receipt, readback = (strict_loads(bytes.fromhex(packet[key])) for key in ("postResponseHex", "getResponseHex"))
-    return verify_ticket_result(receipt, readback, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["historicalTime"]))
+    return verify_ticket_result(receipt, readback, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["historicalTime"]), grant_verifier=retained_grants)
 
 
 def reconstruct_admission(case: dict[str, Any], history: bytes, prior: dict[str, Any], live: dict[str, Any], current: dict[str, Any], *, evaluated_at: Any) -> dict[str, Any]:
@@ -274,7 +275,7 @@ def reconstruct_admission(case: dict[str, Any], history: bytes, prior: dict[str,
     verify_grant(current["grant"], ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), now=now)
     require(canonical(current["grant"]) == canonical(case["grant"]), "current-grant-binding")
     retained = strict_loads(bytes.fromhex(prior["postResponseHex"]))
-    verified = verify_ticket_result(retained, live, ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), current["serviceKey"], current["grant"], now=now)
+    verified = verify_ticket_result(retained, live, ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), current["serviceKey"], current["grant"], now=now, grant_verifier=retained_grants)
     require(verified == checked, "historical-live-effect-join")
     return {"status": "admitted-result-only", "toolCallId": call["tool_call_id"], "historySha256": sha(history), "priorHttpSha256": sha(canonical(prior)), "liveSha256": sha(canonical(live)), "evaluatedAt": evaluated_at.isoformat(), "result": checked, "dispatchPermitted": False}
 

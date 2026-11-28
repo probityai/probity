@@ -21,7 +21,7 @@ identities = verified_identities(
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "environment": "prod",
   "tenant": "acme",
   "audience": "https://billing.example.com/mcp",
@@ -35,11 +35,12 @@ identities = verified_identities(
       "keys": [{"kty": "OKP", "crv": "Ed25519", "x": "..."}],
       "pins": [{"thumbprint": "<RFC 7638 thumbprint>", "roles": ["stamp"], "tenants": ["acme"]}]
     }
-  }
+  },
+  "anchors": []
 }
 ```
 
-Every member is required and no other member is allowed. Each pin names one listed key by its RFC 7638 thumbprint and says which roles (`user`, `agent`, `sponsor`, `stamp`) it may sign for and in which tenants. A key signs a credential only for a role and a tenant its pin names, so a key pinned for user tokens never makes an agent. A token issuer is an `https` URL and its keys carry `kid`. A stamp key is an Ed25519 key pinned for `stamp` alone. A private member, an RSA key shorter than 2048 bits, a key listed twice or a pin that names no listed key is refused as `trust_bundle_malformed`.
+Every member is required and no other member is allowed; `version` is 2, and a version 1 document is refused. `anchors` lists the keys that sign evidence ([trust-bundle.md](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/trust-bundle.md)); `issuers` may be empty only when `anchors` is not. Each pin names one listed key by its RFC 7638 thumbprint and says which roles (`user`, `agent`, `sponsor`, `stamp`) it may sign for and in which tenants. A key signs a credential only for a role and a tenant its pin names, so a key pinned for user tokens never makes an agent. A token issuer is an `https` URL and its keys carry `kid`. A stamp key is an Ed25519 key pinned for `stamp` alone. A private member, an RSA key shorter than 2048 bits, a key listed twice or a pin that names no listed key is refused as `trust_bundle_malformed`.
 
 ## Credentials
 

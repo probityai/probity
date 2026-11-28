@@ -1,0 +1,93 @@
+{
+  "text": "x509-certificate",
+  "spec": "RFC 5280 section 4.1, the outline only, over DER (X.690 section 10): one value fills the input; every element walked has a one-byte tag and a definite length in its shortest form. Certificate ::= SEQUENCE { tbsCertificate SEQUENCE, signatureAlgorithm SEQUENCE, signatureValue BIT STRING }. tbsCertificate ::= SEQUENCE { [0] EXPLICIT INTEGER (1 or 2) OPTIONAL, serialNumber INTEGER, signature SEQUENCE, issuer SEQUENCE, validity SEQUENCE { Time, Time }, subject SEQUENCE, subjectPublicKeyInfo SEQUENCE, then at most once each and in this order [1] (0x81), [2] (0x82), [3] (0xA3) }. Elements inside the names, the algorithm identifiers, the key and the extensions are not walked: they are bytes.",
+  "readers": {
+    "python": [
+      "certificate.certificate_facts",
+      "certificate.spki_key"
+    ],
+    "typescript": [
+      "x509.ts certificateFacts",
+      "x509.ts spkiKey"
+    ]
+  },
+  "productions": {
+    "tlv": {
+      "tagBytes": 1,
+      "lengthBytesMax": 4,
+      "refusal": "certificate_not_der"
+    },
+    "certificate": {
+      "tags": [
+        "30",
+        "30",
+        "03"
+      ]
+    },
+    "tbs": {
+      "version": {
+        "tag": "a0",
+        "integer": [
+          1,
+          2
+        ]
+      },
+      "outline": [
+        "02",
+        "30",
+        "30",
+        "30",
+        "30",
+        "30"
+      ],
+      "optional": [
+        "81",
+        "82",
+        "a3"
+      ]
+    },
+    "time": {
+      "utcTime": {
+        "tag": "17",
+        "pattern": "[0-9]{12}Z",
+        "century": "YY 50 to 99 is 19YY, 00 to 49 is 20YY"
+      },
+      "generalizedTime": {
+        "tag": "18",
+        "pattern": "[0-9]{14}Z"
+      },
+      "refuseTexts": [
+        "2611010000Z",
+        "261101000000",
+        "261101000000+0000",
+        "20261101000000",
+        "20261101000000.0Z",
+        "2026110100Z",
+        "261301000000Z",
+        "260230000000Z",
+        "261101240000Z",
+        "261101006000Z",
+        "261101000060Z",
+        "00000101000000Z",
+        "2611010000 0Z",
+        "26110100000zZ"
+      ]
+    },
+    "spki": {
+      "ed25519": "302a300506032b6570032100",
+      "p256": "3059301306072a8648ce3d020106082a8648ce3d03010703420004"
+    }
+  },
+  "siteRefusal": {
+    "dpop.x5c": "dpop_x5c_invalid",
+    "mtls": "mtls_certificate_invalid"
+  },
+  "derived": [
+    "the PEM text of the certificate",
+    "the DER followed by one byte, by itself, and by a second certificate",
+    "the DER without its last byte",
+    "each element walked with its length in a longer form, and in the indefinite form",
+    "each element walked removed, repeated, and given another tag",
+    "each Time with every text of refuseTexts and with the other time type"
+  ]
+}

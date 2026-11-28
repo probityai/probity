@@ -1,0 +1,95 @@
+{
+  "text": "target-uri",
+  "spec": "RFC 3986 absolute http or https URI, as a DPoP htu and a stamp's target: written only in the RFC 3986 alphabet, no userinfo, a host, an optional port. RFC 9449 section 4.3 and RFC 9421 section 2.2.3 compare it after lower-casing scheme and host and dropping the default port.",
+  "readers": {
+    "python": [
+      "possession.http_uri_parts"
+    ],
+    "typescript": [
+      "verified.ts httpUriParts"
+    ]
+  },
+  "productions": {
+    "uri-text": {
+      "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=",
+      "escape": "%[0-9A-Fa-f]{2}"
+    },
+    "port": {
+      "pattern": "0*([0-9]{1,5})",
+      "bounds": {
+        "max": 65535
+      },
+      "refusal": "uri_port_invalid",
+      "siteRefusal": {
+        "dpop.htu": "dpop_htu_mismatch"
+      },
+      "accept": [
+        [
+          "443",
+          443
+        ],
+        [
+          "0443",
+          443
+        ],
+        [
+          "00000000000000000000000000000000000000000443",
+          443
+        ],
+        [
+          "0",
+          0
+        ],
+        [
+          "00000",
+          0
+        ],
+        [
+          "000000",
+          0
+        ],
+        [
+          "65535",
+          65535
+        ],
+        [
+          "065535",
+          65535
+        ],
+        [
+          "8443",
+          8443
+        ],
+        [
+          "1",
+          1
+        ]
+      ],
+      "refuse": [
+        "",
+        "65536",
+        "99999",
+        "100000",
+        "0100000",
+        "443 ",
+        " 443",
+        "+443",
+        "-1",
+        "4_43",
+        "0x1bb",
+        "443.0",
+        "4e2",
+        "\u0664\u0664\u0663",
+        "\uff14\uff14\uff13",
+        "44\u0663"
+      ],
+      "long": {
+        "zeros": [
+          4400,
+          5000
+        ],
+        "note": "a port of more than 4300 digits: Python's int refuses the run, parseInt reads it; both read only the last five digits after the zeros"
+      }
+    }
+  }
+}

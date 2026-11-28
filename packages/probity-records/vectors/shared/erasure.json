@@ -187,6 +187,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -203,6 +204,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -386,6 +388,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -402,6 +405,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -607,6 +611,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -623,6 +628,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -756,6 +762,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -772,6 +779,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -904,6 +912,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -920,6 +929,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -2462,6 +2472,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -2478,6 +2489,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -3335,6 +3347,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -3351,6 +3364,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -3499,6 +3513,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -3515,6 +3530,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -3660,6 +3676,7 @@
             "class": "payload",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "approver",
             "personal": true,
             "subject": "approver"
@@ -3676,6 +3693,7 @@
             "class": "pseudonym",
             "commit": false,
             "digestOfPersonal": false,
+            "members": true,
             "path": "principals.approver",
             "personal": true,
             "subject": "approver"
@@ -3980,5 +3998,1949 @@
       "signed": "{\"approver\":\"Carol@Example.com\",\"approver_digest\":\"vaquyYPSWcmT0qzinS4FNU+j5ClBgMH02RtU2zZomSE=\",\"principal\":{\"issuer\":\"https://idp.example\",\"subject\":\"alice\"},\"record_kind\":\"decision\",\"user_sha256\":\"2BD806C97F0E00AF1A1FC3328FA763A9269723C8DB8FAC4F93AF71DB186D6E90\"}"
     },
     "op": "personal-traces"
+  },
+  {
+    "description": "an approver list sealed per member: member n is <path>.<n> under subject approver.<n> and its own key, in its own ciphertext",
+    "expected": {
+      "blobs": {
+        "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647": "7362add75b84a073259d640c2e0efa83ebeec8fb61719c4b3644ffbd0219e8cae62736f84f256492c3f1a99dae388c3edd0c8718973c0c2b8c67dba5f92ca55aaf3cfc59685e2052108854ddd83582cec7cf280efeff22cebf1560e67dca56b3c0092aec6b220ae4b3160876813675a58fe8ea2906d380e964750fecf6eb439b448d8a438702af48fcbabc608274200c4cc986ab312aed049048221377849f2acc9e9433f95482ca42570703d8d2173bb6eb6dce6217f10f84e4a57435eca12913e4076b8c33c995e0092243421f2d9c7ff8476e9aa4a93d6955c12baa20e5f447b742c0093a0960970b9a5fcb8546f2d53432c5f5a8e772b25095b555c9a6b85f7a0ea63227e034deb315e87d175279e9805287fe2a1ffe3828c645",
+        "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412": "2dec45f43b754532299082866cecba0c7d645ed0c1ddca7d78576dec8639dde958a6a98d1f21223c9a6ad1275345262b3d76e86c68cb9637c6e4baf02f47d8486f60bd5593ab5d6290cc21daa954732ddf350108c1509c98391d678a5699e4b0a032926a2e4ca493c9f933aba71927a5569d70f6fad42f266d89ca510f90fdfc78e8f6e0934f8c474e773165c42abe9d593be70ea83091406cb020d9704841ad06ed641668c5e44638ab1668db14fdfc0f052ba7543476725c14f3b058a561f3e596b528f30b2a9319d37cac625005124b66ce51bd54270736ef3ce005d0490491f28305bd0bdfb953b176f979afa41924b1d694936bb2d3be7f59adc1a423ef92a62834cd5d46d8cf129fbffc098e94255e61e84921bab6cd79c5a8",
+        "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d": "ea5ccc940d87d3fa2d0b67b225e762cf31a73b1a75c9fa54b307264edd0ba54ce7e9fa9990bab2704097300790945722447446478e7966402cd27badba39da4492f2cb64e186d6c6cc0b4f91dbb415658de97cb9acdc00d34032f89d6f444861ec599b7fad5a5ef9ddca0d33e807cbc5ac16cf3ee8e75cf0fc8904e61f382d62f369f88eb0eee54c5ee7e3fd43d5f16905513264642778db3b59b94e47389e04451c913b90a7980c44e529289994cd4f15cd326134ba28d7a7a53f836cbae839c201ce8c42e3b8419c8af3be0516f8f980e0b92a1a13f620ba264e459c5713bf2d801c75a4b55a834b6d284b21689871c83e94fdb2287ffda149aaee14777446236da0b65b337fd4472ab64f3a90b600810838257bf20fc6a8265832",
+        "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e": "20a17db13aeedaa856d5bb8b1a4438b65a5fc21658025a837cc554c5502bb474fd5303b0f02de6b8a8a7483cdfa707b125e0f745b2f250530f7a0c273f95261dcf9630d0bcbeb1c1d16e1a2d42c32e5ad636a5f92c00cf9e03746ec4ebfcfacdcc65ab1e3f0194bf479c3f2dcc44b89394dd9cd76e26cfff73813795a748c96d9c4ca768d2e1aa850d447ba0e2ce92dfd0abf55552353c5edb4f76b2619e01cb58e6fa0c5f29a66ac23e2fb2c15677bfbd6d7bd56e6ca7301ec120c5c5610ca0d2413129e1668d7d52b205361b2dbab64fe62a095288b16fb4dc57de1901804d04f3272c713ae6f03cac46c0744898a903900b1104e356512f6c9d267653e28eeed40010fc7595d0a3f21583c38a3f34d3c63959222b89a2dcf60cf6",
+        "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68": "520720529fac33e6e17ba34447d2fbe6c1eb2890a1a2f29aad06c1b6cc659fefb9cc43bdd41bb6cf95a2417c7d7ed4f5fbf6daa34a3681001a06a6572ba0df1fd51b1ed023e0418958459e0efb1c3a3e9905f92770c4dd9c2e2ed0fa0d1d8f12db53ad23b82fcc61dfcdfa8452eda0fd12abb52da7376f0fd56a5115283557623128cefbf23b2a6d95b2dcdb4dae6a0ba13ee6c0146b5f4b2562802dbb908ef646f4ec14c188c94be3529fe2879cdbb22959216a7f4b172d5fb1ce7f77b660797fae4489da3988a7b9ab404fc341abd2df775b032291b281e2ae2c0676de0302d8e6db3af02b42625c4897ecd5d6becac80cf16c92830939feb9e7552e352ef0015837c9eaa729d32d1c366f6d1526c3dade256220b847cdfa12fb82",
+        "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559": "097464c836609e37d61710e9d126c6a4b1f2f4fde14149256ec21ad2c1629d24197fcc45bd5548a9a53cfc335c497c5ae94873466de5b75fbf86104d8d37f68f089e3fe54ca898243bb5c1814e6fea7ae122003467bca3df14829003effe6190c0145acf1b630dc316a311b625d8744323dd19e9608f78658849e545b7b7dea424e95bbee90145809b748636367e2a7c365739abc17d0cdae7d106d4441719db128ce4cc104755c9ac1055a44c5b2319c1be7226ce75a953365df21db70ad54f6cb018077f711072a9673faba682a002cae846a5470c820c29f72e396f4cece817ddd84c16e78c63cf95aca24214c529943375bd0b852ba7f7cfce4f62e62f8cb8b3b9078e06db340c229a3225c7d10c5212a0aef1bf3bd12bca222c"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver.0": "payload",
+          "approver.1": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver.0": "pseudonym",
+          "principals.approver.1": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver.0": "fdfa8dc28208fcac5ce933e3db594ab551e2c196d76f79b2a02fe24d217a93eb",
+          "principals.approver.1": "1234adad0c3062b065120f543aa93a3a319a2a320b182c46c2ab186af10cd965",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver.0": "approver.0",
+          "approver.1": "approver.1",
+          "intent": "user",
+          "principals.approver.0": "approver.0",
+          "principals.approver.1": "approver.1",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "kept": {
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record_kind": "decision",
+        "sequence": 3,
+        "verdict": "allow"
+      },
+      "subjectDigest": "491a467fcf1c18fc2a0eecf8429facca3834523a04684367816d2e21c48e10dc"
+    },
+    "id": "S11",
+    "input": {
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver.0/payload": "20a17db13aeedaa856d5bb8b",
+        "approver.0/pseudonym": "ea5ccc940d87d3fa2d0b67b2",
+        "approver.1/payload": "7362add75b84a073259d640c",
+        "approver.1/pseudonym": "2dec45f43b75453229908286",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": [
+          "carol@example.com",
+          "dave@example.com"
+        ],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": [
+            {
+              "issuer": "https://idp.example",
+              "subject": "carol"
+            },
+            {
+              "issuer": "https://idp.example",
+              "subject": "dave"
+            }
+          ],
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "an approver list under the one approver key names several subjects and is refused",
+    "expected": {
+      "refused": "field_names_several_subjects"
+    },
+    "id": "S12",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver.0/payload": "20a17db13aeedaa856d5bb8b",
+        "approver.0/pseudonym": "ea5ccc940d87d3fa2d0b67b2",
+        "approver.1/payload": "7362add75b84a073259d640c",
+        "approver.1/pseudonym": "2dec45f43b75453229908286",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": [
+          "carol@example.com",
+          "dave@example.com"
+        ],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": [
+            {
+              "issuer": "https://idp.example",
+              "subject": "carol"
+            },
+            {
+              "issuer": "https://idp.example",
+              "subject": "dave"
+            }
+          ],
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "an empty approver list names no subject and is refused",
+    "expected": {
+      "refused": "approver_list_empty"
+    },
+    "id": "S13",
+    "input": {
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver.0/payload": "20a17db13aeedaa856d5bb8b",
+        "approver.0/pseudonym": "ea5ccc940d87d3fa2d0b67b2",
+        "approver.1/payload": "7362add75b84a073259d640c",
+        "approver.1/pseudonym": "2dec45f43b75453229908286",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": [],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": {
+            "issuer": "https://idp.example",
+            "subject": "carol"
+          },
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "every member key present: the approver lists open in their order",
+    "expected": {
+      "erased": [],
+      "fields": {
+        "approver": [
+          "carol@example.com",
+          "dave@example.com"
+        ],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": [
+            {
+              "issuer": "https://idp.example",
+              "subject": "carol"
+            },
+            {
+              "issuer": "https://idp.example",
+              "subject": "dave"
+            }
+          ],
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "missing": []
+    },
+    "id": "O13",
+    "input": {
+      "blobs": {
+        "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647": "7362add75b84a073259d640c2e0efa83ebeec8fb61719c4b3644ffbd0219e8cae62736f84f256492c3f1a99dae388c3edd0c8718973c0c2b8c67dba5f92ca55aaf3cfc59685e2052108854ddd83582cec7cf280efeff22cebf1560e67dca56b3c0092aec6b220ae4b3160876813675a58fe8ea2906d380e964750fecf6eb439b448d8a438702af48fcbabc608274200c4cc986ab312aed049048221377849f2acc9e9433f95482ca42570703d8d2173bb6eb6dce6217f10f84e4a57435eca12913e4076b8c33c995e0092243421f2d9c7ff8476e9aa4a93d6955c12baa20e5f447b742c0093a0960970b9a5fcb8546f2d53432c5f5a8e772b25095b555c9a6b85f7a0ea63227e034deb315e87d175279e9805287fe2a1ffe3828c645",
+        "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412": "2dec45f43b754532299082866cecba0c7d645ed0c1ddca7d78576dec8639dde958a6a98d1f21223c9a6ad1275345262b3d76e86c68cb9637c6e4baf02f47d8486f60bd5593ab5d6290cc21daa954732ddf350108c1509c98391d678a5699e4b0a032926a2e4ca493c9f933aba71927a5569d70f6fad42f266d89ca510f90fdfc78e8f6e0934f8c474e773165c42abe9d593be70ea83091406cb020d9704841ad06ed641668c5e44638ab1668db14fdfc0f052ba7543476725c14f3b058a561f3e596b528f30b2a9319d37cac625005124b66ce51bd54270736ef3ce005d0490491f28305bd0bdfb953b176f979afa41924b1d694936bb2d3be7f59adc1a423ef92a62834cd5d46d8cf129fbffc098e94255e61e84921bab6cd79c5a8",
+        "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d": "ea5ccc940d87d3fa2d0b67b225e762cf31a73b1a75c9fa54b307264edd0ba54ce7e9fa9990bab2704097300790945722447446478e7966402cd27badba39da4492f2cb64e186d6c6cc0b4f91dbb415658de97cb9acdc00d34032f89d6f444861ec599b7fad5a5ef9ddca0d33e807cbc5ac16cf3ee8e75cf0fc8904e61f382d62f369f88eb0eee54c5ee7e3fd43d5f16905513264642778db3b59b94e47389e04451c913b90a7980c44e529289994cd4f15cd326134ba28d7a7a53f836cbae839c201ce8c42e3b8419c8af3be0516f8f980e0b92a1a13f620ba264e459c5713bf2d801c75a4b55a834b6d284b21689871c83e94fdb2287ffda149aaee14777446236da0b65b337fd4472ab64f3a90b600810838257bf20fc6a8265832",
+        "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e": "20a17db13aeedaa856d5bb8b1a4438b65a5fc21658025a837cc554c5502bb474fd5303b0f02de6b8a8a7483cdfa707b125e0f745b2f250530f7a0c273f95261dcf9630d0bcbeb1c1d16e1a2d42c32e5ad636a5f92c00cf9e03746ec4ebfcfacdcc65ab1e3f0194bf479c3f2dcc44b89394dd9cd76e26cfff73813795a748c96d9c4ca768d2e1aa850d447ba0e2ce92dfd0abf55552353c5edb4f76b2619e01cb58e6fa0c5f29a66ac23e2fb2c15677bfbd6d7bd56e6ca7301ec120c5c5610ca0d2413129e1668d7d52b205361b2dbab64fe62a095288b16fb4dc57de1901804d04f3272c713ae6f03cac46c0744898a903900b1104e356512f6c9d267653e28eeed40010fc7595d0a3f21583c38a3f34d3c63959222b89a2dcf60cf6",
+        "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68": "520720529fac33e6e17ba34447d2fbe6c1eb2890a1a2f29aad06c1b6cc659fefb9cc43bdd41bb6cf95a2417c7d7ed4f5fbf6daa34a3681001a06a6572ba0df1fd51b1ed023e0418958459e0efb1c3a3e9905f92770c4dd9c2e2ed0fa0d1d8f12db53ad23b82fcc61dfcdfa8452eda0fd12abb52da7376f0fd56a5115283557623128cefbf23b2a6d95b2dcdb4dae6a0ba13ee6c0146b5f4b2562802dbb908ef646f4ec14c188c94be3529fe2879cdbb22959216a7f4b172d5fb1ce7f77b660797fae4489da3988a7b9ab404fc341abd2df775b032291b281e2ae2c0676de0302d8e6db3af02b42625c4897ecd5d6becac80cf16c92830939feb9e7552e352ef0015837c9eaa729d32d1c366f6d1526c3dade256220b847cdfa12fb82",
+        "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559": "097464c836609e37d61710e9d126c6a4b1f2f4fde14149256ec21ad2c1629d24197fcc45bd5548a9a53cfc335c497c5ae94873466de5b75fbf86104d8d37f68f089e3fe54ca898243bb5c1814e6fea7ae122003467bca3df14829003effe6190c0145acf1b630dc316a311b625d8744323dd19e9608f78658849e545b7b7dea424e95bbee90145809b748636367e2a7c365739abc17d0cdae7d106d4441719db128ce4cc104755c9ac1055a44c5b2319c1be7226ce75a953365df21db70ad54f6cb018077f711072a9673faba682a002cae846a5470c820c29f72e396f4cece817ddd84c16e78c63cf95aca24214c529943375bd0b852ba7f7cfce4f62e62f8cb8b3b9078e06db340c229a3225c7d10c5212a0aef1bf3bd12bca222c"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver.0": "payload",
+          "approver.1": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver.0": "pseudonym",
+          "principals.approver.1": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver.0": "fdfa8dc28208fcac5ce933e3db594ab551e2c196d76f79b2a02fe24d217a93eb",
+          "principals.approver.1": "1234adad0c3062b065120f543aa93a3a319a2a320b182c46c2ab186af10cd965",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver.0": "approver.0",
+          "approver.1": "approver.1",
+          "intent": "user",
+          "principals.approver.0": "approver.0",
+          "principals.approver.1": "approver.1",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "kept": {
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record_kind": "decision",
+        "sequence": 3,
+        "verdict": "allow"
+      },
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      }
+    },
+    "op": "open"
+  },
+  {
+    "description": "one approver's key destroyed: that approver reads as erased (null in place), the other still opens",
+    "expected": {
+      "erased": [
+        "approver.1",
+        "principals.approver.1"
+      ],
+      "fields": {
+        "approver": [
+          "carol@example.com",
+          null
+        ],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": [
+            {
+              "issuer": "https://idp.example",
+              "subject": "carol"
+            },
+            null
+          ],
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "missing": []
+    },
+    "id": "O14",
+    "input": {
+      "blobs": {
+        "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647": "7362add75b84a073259d640c2e0efa83ebeec8fb61719c4b3644ffbd0219e8cae62736f84f256492c3f1a99dae388c3edd0c8718973c0c2b8c67dba5f92ca55aaf3cfc59685e2052108854ddd83582cec7cf280efeff22cebf1560e67dca56b3c0092aec6b220ae4b3160876813675a58fe8ea2906d380e964750fecf6eb439b448d8a438702af48fcbabc608274200c4cc986ab312aed049048221377849f2acc9e9433f95482ca42570703d8d2173bb6eb6dce6217f10f84e4a57435eca12913e4076b8c33c995e0092243421f2d9c7ff8476e9aa4a93d6955c12baa20e5f447b742c0093a0960970b9a5fcb8546f2d53432c5f5a8e772b25095b555c9a6b85f7a0ea63227e034deb315e87d175279e9805287fe2a1ffe3828c645",
+        "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412": "2dec45f43b754532299082866cecba0c7d645ed0c1ddca7d78576dec8639dde958a6a98d1f21223c9a6ad1275345262b3d76e86c68cb9637c6e4baf02f47d8486f60bd5593ab5d6290cc21daa954732ddf350108c1509c98391d678a5699e4b0a032926a2e4ca493c9f933aba71927a5569d70f6fad42f266d89ca510f90fdfc78e8f6e0934f8c474e773165c42abe9d593be70ea83091406cb020d9704841ad06ed641668c5e44638ab1668db14fdfc0f052ba7543476725c14f3b058a561f3e596b528f30b2a9319d37cac625005124b66ce51bd54270736ef3ce005d0490491f28305bd0bdfb953b176f979afa41924b1d694936bb2d3be7f59adc1a423ef92a62834cd5d46d8cf129fbffc098e94255e61e84921bab6cd79c5a8",
+        "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d": "ea5ccc940d87d3fa2d0b67b225e762cf31a73b1a75c9fa54b307264edd0ba54ce7e9fa9990bab2704097300790945722447446478e7966402cd27badba39da4492f2cb64e186d6c6cc0b4f91dbb415658de97cb9acdc00d34032f89d6f444861ec599b7fad5a5ef9ddca0d33e807cbc5ac16cf3ee8e75cf0fc8904e61f382d62f369f88eb0eee54c5ee7e3fd43d5f16905513264642778db3b59b94e47389e04451c913b90a7980c44e529289994cd4f15cd326134ba28d7a7a53f836cbae839c201ce8c42e3b8419c8af3be0516f8f980e0b92a1a13f620ba264e459c5713bf2d801c75a4b55a834b6d284b21689871c83e94fdb2287ffda149aaee14777446236da0b65b337fd4472ab64f3a90b600810838257bf20fc6a8265832",
+        "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e": "20a17db13aeedaa856d5bb8b1a4438b65a5fc21658025a837cc554c5502bb474fd5303b0f02de6b8a8a7483cdfa707b125e0f745b2f250530f7a0c273f95261dcf9630d0bcbeb1c1d16e1a2d42c32e5ad636a5f92c00cf9e03746ec4ebfcfacdcc65ab1e3f0194bf479c3f2dcc44b89394dd9cd76e26cfff73813795a748c96d9c4ca768d2e1aa850d447ba0e2ce92dfd0abf55552353c5edb4f76b2619e01cb58e6fa0c5f29a66ac23e2fb2c15677bfbd6d7bd56e6ca7301ec120c5c5610ca0d2413129e1668d7d52b205361b2dbab64fe62a095288b16fb4dc57de1901804d04f3272c713ae6f03cac46c0744898a903900b1104e356512f6c9d267653e28eeed40010fc7595d0a3f21583c38a3f34d3c63959222b89a2dcf60cf6",
+        "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68": "520720529fac33e6e17ba34447d2fbe6c1eb2890a1a2f29aad06c1b6cc659fefb9cc43bdd41bb6cf95a2417c7d7ed4f5fbf6daa34a3681001a06a6572ba0df1fd51b1ed023e0418958459e0efb1c3a3e9905f92770c4dd9c2e2ed0fa0d1d8f12db53ad23b82fcc61dfcdfa8452eda0fd12abb52da7376f0fd56a5115283557623128cefbf23b2a6d95b2dcdb4dae6a0ba13ee6c0146b5f4b2562802dbb908ef646f4ec14c188c94be3529fe2879cdbb22959216a7f4b172d5fb1ce7f77b660797fae4489da3988a7b9ab404fc341abd2df775b032291b281e2ae2c0676de0302d8e6db3af02b42625c4897ecd5d6becac80cf16c92830939feb9e7552e352ef0015837c9eaa729d32d1c366f6d1526c3dade256220b847cdfa12fb82",
+        "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559": "097464c836609e37d61710e9d126c6a4b1f2f4fde14149256ec21ad2c1629d24197fcc45bd5548a9a53cfc335c497c5ae94873466de5b75fbf86104d8d37f68f089e3fe54ca898243bb5c1814e6fea7ae122003467bca3df14829003effe6190c0145acf1b630dc316a311b625d8744323dd19e9608f78658849e545b7b7dea424e95bbee90145809b748636367e2a7c365739abc17d0cdae7d106d4441719db128ce4cc104755c9ac1055a44c5b2319c1be7226ce75a953365df21db70ad54f6cb018077f711072a9673faba682a002cae846a5470c820c29f72e396f4cece817ddd84c16e78c63cf95aca24214c529943375bd0b852ba7f7cfce4f62e62f8cb8b3b9078e06db340c229a3225c7d10c5212a0aef1bf3bd12bca222c"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver.0": "payload",
+          "approver.1": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver.0": "pseudonym",
+          "principals.approver.1": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver.0": "fdfa8dc28208fcac5ce933e3db594ab551e2c196d76f79b2a02fe24d217a93eb",
+          "principals.approver.1": "1234adad0c3062b065120f543aa93a3a319a2a320b182c46c2ab186af10cd965",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver.0": "approver.0",
+          "approver.1": "approver.1",
+          "intent": "user",
+          "principals.approver.0": "approver.0",
+          "principals.approver.1": "approver.1",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "kept": {
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record_kind": "decision",
+        "sequence": 3,
+        "verdict": "allow"
+      },
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      }
+    },
+    "op": "open"
+  },
+  {
+    "description": "a member field under another member's subject is refused",
+    "expected": {
+      "refused": "roles_malformed"
+    },
+    "id": "O15",
+    "input": {
+      "blobs": {
+        "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647": "7362add75b84a073259d640c2e0efa83ebeec8fb61719c4b3644ffbd0219e8cae62736f84f256492c3f1a99dae388c3edd0c8718973c0c2b8c67dba5f92ca55aaf3cfc59685e2052108854ddd83582cec7cf280efeff22cebf1560e67dca56b3c0092aec6b220ae4b3160876813675a58fe8ea2906d380e964750fecf6eb439b448d8a438702af48fcbabc608274200c4cc986ab312aed049048221377849f2acc9e9433f95482ca42570703d8d2173bb6eb6dce6217f10f84e4a57435eca12913e4076b8c33c995e0092243421f2d9c7ff8476e9aa4a93d6955c12baa20e5f447b742c0093a0960970b9a5fcb8546f2d53432c5f5a8e772b25095b555c9a6b85f7a0ea63227e034deb315e87d175279e9805287fe2a1ffe3828c645",
+        "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412": "2dec45f43b754532299082866cecba0c7d645ed0c1ddca7d78576dec8639dde958a6a98d1f21223c9a6ad1275345262b3d76e86c68cb9637c6e4baf02f47d8486f60bd5593ab5d6290cc21daa954732ddf350108c1509c98391d678a5699e4b0a032926a2e4ca493c9f933aba71927a5569d70f6fad42f266d89ca510f90fdfc78e8f6e0934f8c474e773165c42abe9d593be70ea83091406cb020d9704841ad06ed641668c5e44638ab1668db14fdfc0f052ba7543476725c14f3b058a561f3e596b528f30b2a9319d37cac625005124b66ce51bd54270736ef3ce005d0490491f28305bd0bdfb953b176f979afa41924b1d694936bb2d3be7f59adc1a423ef92a62834cd5d46d8cf129fbffc098e94255e61e84921bab6cd79c5a8",
+        "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d": "ea5ccc940d87d3fa2d0b67b225e762cf31a73b1a75c9fa54b307264edd0ba54ce7e9fa9990bab2704097300790945722447446478e7966402cd27badba39da4492f2cb64e186d6c6cc0b4f91dbb415658de97cb9acdc00d34032f89d6f444861ec599b7fad5a5ef9ddca0d33e807cbc5ac16cf3ee8e75cf0fc8904e61f382d62f369f88eb0eee54c5ee7e3fd43d5f16905513264642778db3b59b94e47389e04451c913b90a7980c44e529289994cd4f15cd326134ba28d7a7a53f836cbae839c201ce8c42e3b8419c8af3be0516f8f980e0b92a1a13f620ba264e459c5713bf2d801c75a4b55a834b6d284b21689871c83e94fdb2287ffda149aaee14777446236da0b65b337fd4472ab64f3a90b600810838257bf20fc6a8265832",
+        "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e": "20a17db13aeedaa856d5bb8b1a4438b65a5fc21658025a837cc554c5502bb474fd5303b0f02de6b8a8a7483cdfa707b125e0f745b2f250530f7a0c273f95261dcf9630d0bcbeb1c1d16e1a2d42c32e5ad636a5f92c00cf9e03746ec4ebfcfacdcc65ab1e3f0194bf479c3f2dcc44b89394dd9cd76e26cfff73813795a748c96d9c4ca768d2e1aa850d447ba0e2ce92dfd0abf55552353c5edb4f76b2619e01cb58e6fa0c5f29a66ac23e2fb2c15677bfbd6d7bd56e6ca7301ec120c5c5610ca0d2413129e1668d7d52b205361b2dbab64fe62a095288b16fb4dc57de1901804d04f3272c713ae6f03cac46c0744898a903900b1104e356512f6c9d267653e28eeed40010fc7595d0a3f21583c38a3f34d3c63959222b89a2dcf60cf6",
+        "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68": "520720529fac33e6e17ba34447d2fbe6c1eb2890a1a2f29aad06c1b6cc659fefb9cc43bdd41bb6cf95a2417c7d7ed4f5fbf6daa34a3681001a06a6572ba0df1fd51b1ed023e0418958459e0efb1c3a3e9905f92770c4dd9c2e2ed0fa0d1d8f12db53ad23b82fcc61dfcdfa8452eda0fd12abb52da7376f0fd56a5115283557623128cefbf23b2a6d95b2dcdb4dae6a0ba13ee6c0146b5f4b2562802dbb908ef646f4ec14c188c94be3529fe2879cdbb22959216a7f4b172d5fb1ce7f77b660797fae4489da3988a7b9ab404fc341abd2df775b032291b281e2ae2c0676de0302d8e6db3af02b42625c4897ecd5d6becac80cf16c92830939feb9e7552e352ef0015837c9eaa729d32d1c366f6d1526c3dade256220b847cdfa12fb82",
+        "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559": "097464c836609e37d61710e9d126c6a4b1f2f4fde14149256ec21ad2c1629d24197fcc45bd5548a9a53cfc335c497c5ae94873466de5b75fbf86104d8d37f68f089e3fe54ca898243bb5c1814e6fea7ae122003467bca3df14829003effe6190c0145acf1b630dc316a311b625d8744323dd19e9608f78658849e545b7b7dea424e95bbee90145809b748636367e2a7c365739abc17d0cdae7d106d4441719db128ce4cc104755c9ac1055a44c5b2319c1be7226ce75a953365df21db70ad54f6cb018077f711072a9673faba682a002cae846a5470c820c29f72e396f4cece817ddd84c16e78c63cf95aca24214c529943375bd0b852ba7f7cfce4f62e62f8cb8b3b9078e06db340c229a3225c7d10c5212a0aef1bf3bd12bca222c"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412",
+            "subject": "approver.1"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver.0": "payload",
+          "approver.1": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver.0": "pseudonym",
+          "principals.approver.1": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver.0": "fdfa8dc28208fcac5ce933e3db594ab551e2c196d76f79b2a02fe24d217a93eb",
+          "principals.approver.1": "1234adad0c3062b065120f543aa93a3a319a2a320b182c46c2ab186af10cd965",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver.0": "approver.0",
+          "approver.1": "approver.1",
+          "intent": "user",
+          "principals.approver.0": "approver.1",
+          "principals.approver.1": "approver.1",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "kept": {
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record_kind": "decision",
+        "sequence": 3,
+        "verdict": "allow"
+      },
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      }
+    },
+    "op": "open"
+  },
+  {
+    "description": "an approver list whose members are not 0 to N-1 is refused",
+    "expected": {
+      "refused": "roles_malformed"
+    },
+    "id": "O16",
+    "input": {
+      "blobs": {
+        "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647": "7362add75b84a073259d640c2e0efa83ebeec8fb61719c4b3644ffbd0219e8cae62736f84f256492c3f1a99dae388c3edd0c8718973c0c2b8c67dba5f92ca55aaf3cfc59685e2052108854ddd83582cec7cf280efeff22cebf1560e67dca56b3c0092aec6b220ae4b3160876813675a58fe8ea2906d380e964750fecf6eb439b448d8a438702af48fcbabc608274200c4cc986ab312aed049048221377849f2acc9e9433f95482ca42570703d8d2173bb6eb6dce6217f10f84e4a57435eca12913e4076b8c33c995e0092243421f2d9c7ff8476e9aa4a93d6955c12baa20e5f447b742c0093a0960970b9a5fcb8546f2d53432c5f5a8e772b25095b555c9a6b85f7a0ea63227e034deb315e87d175279e9805287fe2a1ffe3828c645",
+        "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412": "2dec45f43b754532299082866cecba0c7d645ed0c1ddca7d78576dec8639dde958a6a98d1f21223c9a6ad1275345262b3d76e86c68cb9637c6e4baf02f47d8486f60bd5593ab5d6290cc21daa954732ddf350108c1509c98391d678a5699e4b0a032926a2e4ca493c9f933aba71927a5569d70f6fad42f266d89ca510f90fdfc78e8f6e0934f8c474e773165c42abe9d593be70ea83091406cb020d9704841ad06ed641668c5e44638ab1668db14fdfc0f052ba7543476725c14f3b058a561f3e596b528f30b2a9319d37cac625005124b66ce51bd54270736ef3ce005d0490491f28305bd0bdfb953b176f979afa41924b1d694936bb2d3be7f59adc1a423ef92a62834cd5d46d8cf129fbffc098e94255e61e84921bab6cd79c5a8",
+        "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d": "ea5ccc940d87d3fa2d0b67b225e762cf31a73b1a75c9fa54b307264edd0ba54ce7e9fa9990bab2704097300790945722447446478e7966402cd27badba39da4492f2cb64e186d6c6cc0b4f91dbb415658de97cb9acdc00d34032f89d6f444861ec599b7fad5a5ef9ddca0d33e807cbc5ac16cf3ee8e75cf0fc8904e61f382d62f369f88eb0eee54c5ee7e3fd43d5f16905513264642778db3b59b94e47389e04451c913b90a7980c44e529289994cd4f15cd326134ba28d7a7a53f836cbae839c201ce8c42e3b8419c8af3be0516f8f980e0b92a1a13f620ba264e459c5713bf2d801c75a4b55a834b6d284b21689871c83e94fdb2287ffda149aaee14777446236da0b65b337fd4472ab64f3a90b600810838257bf20fc6a8265832",
+        "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e": "20a17db13aeedaa856d5bb8b1a4438b65a5fc21658025a837cc554c5502bb474fd5303b0f02de6b8a8a7483cdfa707b125e0f745b2f250530f7a0c273f95261dcf9630d0bcbeb1c1d16e1a2d42c32e5ad636a5f92c00cf9e03746ec4ebfcfacdcc65ab1e3f0194bf479c3f2dcc44b89394dd9cd76e26cfff73813795a748c96d9c4ca768d2e1aa850d447ba0e2ce92dfd0abf55552353c5edb4f76b2619e01cb58e6fa0c5f29a66ac23e2fb2c15677bfbd6d7bd56e6ca7301ec120c5c5610ca0d2413129e1668d7d52b205361b2dbab64fe62a095288b16fb4dc57de1901804d04f3272c713ae6f03cac46c0744898a903900b1104e356512f6c9d267653e28eeed40010fc7595d0a3f21583c38a3f34d3c63959222b89a2dcf60cf6",
+        "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68": "520720529fac33e6e17ba34447d2fbe6c1eb2890a1a2f29aad06c1b6cc659fefb9cc43bdd41bb6cf95a2417c7d7ed4f5fbf6daa34a3681001a06a6572ba0df1fd51b1ed023e0418958459e0efb1c3a3e9905f92770c4dd9c2e2ed0fa0d1d8f12db53ad23b82fcc61dfcdfa8452eda0fd12abb52da7376f0fd56a5115283557623128cefbf23b2a6d95b2dcdb4dae6a0ba13ee6c0146b5f4b2562802dbb908ef646f4ec14c188c94be3529fe2879cdbb22959216a7f4b172d5fb1ce7f77b660797fae4489da3988a7b9ab404fc341abd2df775b032291b281e2ae2c0676de0302d8e6db3af02b42625c4897ecd5d6becac80cf16c92830939feb9e7552e352ef0015837c9eaa729d32d1c366f6d1526c3dade256220b847cdfa12fb82",
+        "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559": "097464c836609e37d61710e9d126c6a4b1f2f4fde14149256ec21ad2c1629d24197fcc45bd5548a9a53cfc335c497c5ae94873466de5b75fbf86104d8d37f68f089e3fe54ca898243bb5c1814e6fea7ae122003467bca3df14829003effe6190c0145acf1b630dc316a311b625d8744323dd19e9608f78658849e545b7b7dea424e95bbee90145809b748636367e2a7c365739abc17d0cdae7d106d4441719db128ce4cc104755c9ac1055a44c5b2319c1be7226ce75a953365df21db70ad54f6cb018077f711072a9673faba682a002cae846a5470c820c29f72e396f4cece817ddd84c16e78c63cf95aca24214c529943375bd0b852ba7f7cfce4f62e62f8cb8b3b9078e06db340c229a3225c7d10c5212a0aef1bf3bd12bca222c"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "92399102ab3368e3fa176d284a1d6de1a02115ed385ab2dc6421be71290b192e",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "7f1f225ea1ab6d666d168e611d20f917f665bf93be109c45d55ca5f4188e320d",
+            "subject": "approver.0"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "4996e5d13060b83a79be0c76bcf4616c5f66f48a0319fbc82499c120be8ec647",
+            "subject": "approver.2"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "6a32701b6aced3e78015897a6d81a1f3c4e014ab8b8fb1e28a10aa806813d412",
+            "subject": "approver.2"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver.0": "payload",
+          "approver.2": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver.0": "pseudonym",
+          "principals.approver.2": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver.0": "fdfa8dc28208fcac5ce933e3db594ab551e2c196d76f79b2a02fe24d217a93eb",
+          "principals.approver.2": "1234adad0c3062b065120f543aa93a3a319a2a320b182c46c2ab186af10cd965",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver.0": "approver.0",
+          "approver.2": "approver.2",
+          "intent": "user",
+          "principals.approver.0": "approver.0",
+          "principals.approver.2": "approver.2",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "kept": {
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record_kind": "decision",
+        "sequence": 3,
+        "verdict": "allow"
+      },
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      }
+    },
+    "op": "open"
+  },
+  {
+    "description": "one key passed under two member subjects is one key over the list and is refused",
+    "expected": {
+      "refused": "field_names_several_subjects"
+    },
+    "id": "S14",
+    "input": {
+      "keys": {
+        "approver.0": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "approver.1": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver.0/payload": "20a17db13aeedaa856d5bb8b",
+        "approver.0/pseudonym": "ea5ccc940d87d3fa2d0b67b2",
+        "approver.1/payload": "7362add75b84a073259d640c",
+        "approver.1/pseudonym": "2dec45f43b75453229908286",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": [
+          "carol@example.com",
+          "dave@example.com"
+        ],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": [
+            {
+              "issuer": "https://idp.example",
+              "subject": "carol"
+            },
+            {
+              "issuer": "https://idp.example",
+              "subject": "dave"
+            }
+          ],
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "one approver's own list under a rule that does not declare members seals whole under the approver key, as before approver lists",
+    "expected": {
+      "blobs": {
+        "41bedf84ba470a976039a87c08731dd9d58f5517d8b9c7edf9418a083b24ede3": "b74817ab03a893cc345a3f45ac25cb83b337edb67bd143619bcff4136c3f61e7ef1b909360b012f89c56791e4823799fc3665effe5b11b9e230a4ca67a15431fffaf45e63f1eda12b568cb4c12b89bcc8048f083a3ed9ec47837fb6382cc3792a393fc13229d303bbdeff9b4e32478a05706de1ceebf6953c22cbc13b3fb529294d5f0535a0d2e03e923673d54672434f985ff9d18b49d6eb6c3e682ce57010ecb864958fc87e647fb636e593f20d42861ee5af7d908c3231e2ee838462147a4b9c2a611bb9792d47534d25f56dd8e8cf5d894eb85b1ea2f6f272e0bbbc4c548d36cf9788d520ae46b2b9c97f4ae79dbefe5fb32658149bc89712ced62bae0fc3b7ca996d851bafc5c78a4426bbc0f19c85ddab53f6c67c3db621bc8"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "41bedf84ba470a976039a87c08731dd9d58f5517d8b9c7edf9418a083b24ede3",
+            "subject": "approver"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "approver_roles": "payload",
+          "record_kind": "kept"
+        },
+        "commitments": {},
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {},
+        "roles": {
+          "approver": "approver",
+          "approver_roles": "approver"
+        },
+        "schema": "example-vote-roles@2",
+        "subjectRole": "approver"
+      },
+      "kept": {
+        "record_kind": "vote"
+      },
+      "subjectDigest": "90a2032603b4f15ab3f654a2f09aac6753f8593d3bfb615660ace335ad220ea7"
+    },
+    "id": "S15",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": "carol@example.com",
+        "approver_roles": [
+          "finance",
+          "security"
+        ],
+        "record_kind": "vote"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-vote-roles@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver_roles",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      },
+      "subjectRole": "approver",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "a record with an approver list and a field under the one approver key is refused: that key is nobody in particular",
+    "expected": {
+      "refused": "field_names_several_subjects"
+    },
+    "id": "S16",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver.0/payload": "20a17db13aeedaa856d5bb8b",
+        "approver.0/pseudonym": "ea5ccc940d87d3fa2d0b67b2",
+        "approver.1/payload": "7362add75b84a073259d640c",
+        "approver.1/pseudonym": "2dec45f43b75453229908286",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": [
+          "carol@example.com",
+          "dave@example.com"
+        ],
+        "approver_roles": [
+          "finance",
+          "security"
+        ],
+        "record_kind": "vote"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-vote-roles@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver_roles",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      },
+      "subjectRole": "approver",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "two approver lists of different lengths in one record are refused: member n is not one person",
+    "expected": {
+      "refused": "field_names_several_subjects"
+    },
+    "id": "S17",
+    "input": {
+      "keys": {
+        "approver.0": "a193f83b4939438be875b9a0b17f903e141267a6da304abb5b78fcf5405827b0",
+        "approver.1": "803bf9c41660d9080880638640a6c7aa62a5a08b7f5710adacf69e67452b1949",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver.0/payload": "20a17db13aeedaa856d5bb8b",
+        "approver.0/pseudonym": "ea5ccc940d87d3fa2d0b67b2",
+        "approver.1/payload": "7362add75b84a073259d640c",
+        "approver.1/pseudonym": "2dec45f43b75453229908286",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": [
+          "carol@example.com"
+        ],
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": [
+            {
+              "issuer": "https://idp.example",
+              "subject": "carol"
+            },
+            {
+              "issuer": "https://idp.example",
+              "subject": "dave"
+            }
+          ],
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "an approver principals rule must declare members, and only an approver rule may",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals.approver",
+        "members_outside_approver:note"
+      ]
+    },
+    "id": "L6",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "members": true,
+            "path": "note",
+            "personal": false,
+            "subject": "user"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
+  },
+  {
+    "description": "the 0.12.0 example schema, whose principals.approver rule declares no members, no longer lints",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals.approver"
+      ]
+    },
+    "id": "L7",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      }
+    },
+    "op": "lint"
+  },
+  {
+    "description": "a record sealed under the 0.12.0 example schema is refused until its approver rule declares members",
+    "expected": {
+      "refused": "schema_refused"
+    },
+    "id": "S18",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": "carol@example.com",
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": {
+            "issuer": "https://idp.example",
+            "subject": "carol"
+          },
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "a principals.approver rule under another subject's key would seal the list under that one key",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals.approver"
+      ]
+    },
+    "id": "L8",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "user"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
+  },
+  {
+    "description": "a rule on the whole principals block would seal an approver list under one key",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals"
+      ]
+    },
+    "id": "L9",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals",
+            "personal": true,
+            "subject": "user"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
   }
 ]

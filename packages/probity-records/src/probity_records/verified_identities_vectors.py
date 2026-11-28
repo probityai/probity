@@ -33,8 +33,9 @@ from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.x509.oid import NameOID
 
 from .canonical_identity import CanonicalIdentity, Ref
+from .core import unb64
 from .digests import act_chain_digest
-from .identity import b64url, jwk_thumbprint
+from .identity import b64url, jwk_thumbprint, unb64url
 from .possession import (
     CertificateProof,
     DpopProof,
@@ -167,9 +168,12 @@ def token(role: str, *, key: Any = None, kid: str = "idp-1", iss: str = IDP, hea
     key = USER_KEY if key is None else key
     typ = {"user": "at+jwt", "agent": "at+jwt", "sponsor": "JWT"}[role]
     head = {"alg": _alg(key), "typ": typ, "kid": kid, **(header or {})}
-    body = {"user": {"sub": "alice@example.com", "client_id": "agent-refunds", "act": {"sub": "agent-refunds"}},
-            "agent": {"sub": "agent-refunds", "client_id": "agent-refunds"},
-            "sponsor": {"sub": "owner@example.com", "azp": "console"}}[role]
+    bodies: dict[str, dict[str, Any]] = {
+        "user": {"sub": "alice@example.com", "client_id": "agent-refunds", "act": {"sub": "agent-refunds"}},
+        "agent": {"sub": "agent-refunds", "client_id": "agent-refunds"},
+        "sponsor": {"sub": "owner@example.com", "azp": "console"},
+    }
+    body = bodies[role]
     full = {"iss": iss, "aud": AUDIENCE, "iat": NOW - 60, "exp": NOW + 300, **copy.deepcopy(body), **claims}
     return _sign(key, {k: v for k, v in head.items() if v is not None}, {k: v for k, v in full.items() if v is not None})
 
@@ -179,12 +183,12 @@ def pin(key: Any, roles: list[str], tenants: list[str] | None = None, kid: str |
     return jwk, {"thumbprint": jwk_thumbprint(jwk), "roles": roles, "tenants": tenants or [TENANT]}
 
 
-def bundle(profile: str = "basic", **issuers: Any) -> dict[str, Any]:
+def bundle(profile: str = "basic", issuers: dict[str, Any] | None = None) -> dict[str, Any]:
     user_jwk, user_pin = pin(USER_KEY, ["user", "agent", "sponsor"])
     stamp_jwk, stamp_pin = pin(STAMP_KEY, ["stamp"], kid=None)
     base = {IDP: {"keys": [user_jwk], "pins": [user_pin]}, GATEWAY: {"keys": [stamp_jwk], "pins": [stamp_pin]}}
-    return {"version": 1, "environment": ENV, "tenant": TENANT, "audience": AUDIENCE, "profile": profile,
-            "issuers": {**base, **issuers}}  # fmt: skip
+    return {"version": 2, "environment": ENV, "tenant": TENANT, "audience": AUDIENCE, "profile": profile,
+            "issuers": {**base, **(issuers or {})}, "anchors": []}  # fmt: skip
 
 
 STAMP_ACT = act_chain_digest({"sub": "agent-refunds"})
@@ -252,7 +256,7 @@ def _proof(access: str, *, key: Ed25519PrivateKey = HOLDER_KEY, url: str = URL, 
            iat: int = NOW) -> str:
     """A DPoP proof, re-signed with the claims segment shaped as in ``_segment``."""
     head, body, _ = sign_dpop(key, "POST", url, iat=iat, jti=jti, access_token=access, content=BODY).split(".")
-    claims = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    claims = json.loads(unb64url(body))
     shaped = _segment(claims, sort_keys=False)
     return f"{head}.{shaped}.{b64url(key.sign(f'{head}.{shaped}'.encode('ascii')))}"
 
@@ -288,10 +292,10 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({"user": user, "agent": agent}, transport=TRANSPORT.render())),
         ("VI7", "an ES256 identity provider", c({"user": token("user", key=_ec(), kid="ec-1", iss=IDP_EC),
                                                  "agent": token("agent", key=_ec(), kid="ec-1", iss=IDP_EC)},
-                                                bundle=bundle(**{IDP_EC: {"keys": [ec_jwk], "pins": [ec_pin]}}))),
+                                                bundle=bundle(issuers={IDP_EC: {"keys": [ec_jwk], "pins": [ec_pin]}}))),
         ("VI8", "an RS256 identity provider", c({"user": token("user", key=_rsa(), kid="rsa-1", iss=IDP_RSA),
                                                  "agent": token("agent", key=_rsa(), kid="rsa-1", iss=IDP_RSA)},
-                                                bundle=bundle(**{IDP_RSA: {"keys": [rsa_jwk], "pins": [rsa_pin]}}))),
+                                                bundle=bundle(issuers={IDP_RSA: {"keys": [rsa_jwk], "pins": [rsa_pin]}}))),
         ("VI9", "a stamp from the pinned gateway names the identity the gateway verified",
          c({}, request=request(headers=stamp()))),
         ("VI13", "the stamp's field names in another case are the same fields",
@@ -329,11 +333,11 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
         ("VR10", "a kid that selects no pinned key", c({"user": user, "agent": token("agent", kid="idp-9")})),
         ("VR11", "a key pinned for users only signs an agent token",
          c({"user": user, "agent": token("agent", key=ROGUE_KEY, kid="idp-2")},
-           bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1"), user_only_jwk],
+           bundle=bundle(issuers={IDP: {"keys": [_jwk(USER_KEY, "idp-1"), user_only_jwk],
                                   "pins": [pin(USER_KEY, ["user", "agent", "sponsor"])[1], user_only_pin]}}))),
         ("VR12", "a key pinned for another tenant",
          c({"user": user, "agent": token("agent", key=ROGUE_KEY, kid="idp-3")},
-           bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1"), other_tenant_jwk],
+           bundle=bundle(issuers={IDP: {"keys": [_jwk(USER_KEY, "idp-1"), other_tenant_jwk],
                                   "pins": [pin(USER_KEY, ["user", "agent", "sponsor"])[1], other_tenant_pin]}}))),
         ("VR13", "alg none", c({"user": user, "agent": _alg_none(agent)})),
         ("VR14", "an ID token presented as the agent's access token",
@@ -412,7 +416,7 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(headers=stamp(principals=principals_field(CanonicalIdentity(kind="agent", user=Ref("user", "staging", IDP, "alice@example.com"), chain=(Ref("agent", "staging", IDP, "agent-refunds"),), act=STAMP_ACT).render()))))),
         ("VS29", "an identity provider's key signs a stamp", c({}, request=request(headers=stamp(signer=USER_KEY)))),
         ("VS30", "a stamp key pinned for another tenant",
-         c({}, bundle=bundle(**{GATEWAY: {"keys": [_jwk(STAMP_KEY, None)],
+         c({}, bundle=bundle(issuers={GATEWAY: {"keys": [_jwk(STAMP_KEY, None)],
                                           "pins": [pin(STAMP_KEY, ["stamp"], tenants=["globex"], kid=None)[1]]}}),
            request=request(headers=stamp()))),
         ("VS31", "a stamp whose nonce is an Integer, not a String", c({}, request=request(headers=stamp(nonce=7)))),
@@ -423,24 +427,24 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(headers=replace(stamp(), SIGNATURE_INPUT_HEADER, "probity=(\"@method\"")))),
         # --- refused: the bundle ---
         ("VB1", "a bundle pin naming no listed key",
-         c({"user": user, "agent": agent}, bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1")],
+         c({"user": user, "agent": agent}, bundle=bundle(issuers={IDP: {"keys": [_jwk(USER_KEY, "idp-1")],
                                                                   "pins": [user_only_pin]}}))),
         ("VB2", "a bundle carrying a private key",
-         c({"user": user, "agent": agent}, bundle=bundle(**{IDP: {"keys": [{**_jwk(USER_KEY, "idp-1"), "d": "AA"}],
+         c({"user": user, "agent": agent}, bundle=bundle(issuers={IDP: {"keys": [{**_jwk(USER_KEY, "idp-1"), "d": "AA"}],
                                                                   "pins": [pin(USER_KEY, ["user"])[1]]}}))),
     ]
 
 
 def _swap_claims(jws: str, **claims: Any) -> str:
     head, body, sig = jws.split(".")
-    doc = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    doc = json.loads(unb64url(body))
     doc.update(claims)
     return f"{head}.{_segment(doc)}.{sig}"
 
 
 def _alg_none(jws: str) -> str:
     head, body, _ = jws.split(".")
-    doc = json.loads(base64.urlsafe_b64decode(head + "=" * (-len(head) % 4)))
+    doc = json.loads(unb64url(head))
     return f"{b64url(json.dumps({**doc, 'alg': 'none'}, separators=(',', ':')).encode())}.{body}.AA"
 
 
@@ -449,8 +453,8 @@ def judge(case: dict[str, Any]) -> dict[str, Any]:
     raw = case["request"]
     facts = None if raw is None else RequestFacts(
         method=raw["method"], url=raw["url"],
-        content=None if raw["contentB64"] is None else base64.b64decode(raw["contentB64"]), dpop=raw["dpop"],
-        client_certificate=None if raw["clientCertificateB64"] is None else base64.b64decode(raw["clientCertificateB64"]),
+        content=None if raw["contentB64"] is None else unb64(raw["contentB64"]), dpop=raw["dpop"],
+        client_certificate=None if raw["clientCertificateB64"] is None else unb64(raw["clientCertificateB64"]),
         headers=tuple((name, value) for name, value in raw["headers"]))
     transport = None if case["transport"] is None else CanonicalIdentity.parse(case["transport"])
     try:

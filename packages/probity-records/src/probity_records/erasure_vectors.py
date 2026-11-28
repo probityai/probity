@@ -4,7 +4,8 @@ Each vector is ``{"id", "description", "op", "input", "expected"}``. Byte string
 ciphertexts) are lowercase hex. ``op`` is one of:
 
 - ``seal``: ``input`` is ``{"schema", "record", "keys", "subjectValue", "subjectRole", "leaf", "nonces"}`` (``keys``
-  maps a role to a 32-byte key, ``nonces`` maps ``"<role>/<class>"`` to a 12-byte nonce); ``expected`` is
+  maps a subject (a role, or ``approver.<n>`` for member n of an approver list) to a 32-byte key, ``nonces`` maps
+  ``"<subject>/<class>"`` to a 12-byte nonce); ``expected`` is
   ``{"kept", "erasure", "blobs", "subjectDigest"}`` or ``{"refused"}``.
 - ``open``: ``input`` is ``{"kept", "erasure", "blobs", "keys"}``; ``expected`` is ``{"fields", "erased",
   "missing"}`` or ``{"refused"}``.
@@ -37,13 +38,23 @@ SCHEMA = Schema("example-decision@2", (
     Rule("session_sha256", PSEUDONYM, "user", personal=True, digest_of_personal=True),
     Rule("intent", PAYLOAD, "user", personal=True, commit=True),
     Rule("reasons", PAYLOAD, "user", personal=True),
-    Rule("approver", PAYLOAD, "approver", personal=True),
+    Rule("approver", PAYLOAD, "approver", personal=True, members=True),
     Rule("principals.user", PSEUDONYM, "user", personal=True),
-    Rule("principals.approver", PSEUDONYM, "approver", personal=True),
+    Rule("principals.approver", PSEUDONYM, "approver", personal=True, members=True),
 ), frozenset({"previous_record_sha256"}))  # fmt: skip
 VOTE = Schema("example-vote@2", (
     Rule("record_kind", KEPT), Rule("decision", KEPT), Rule("approver", PAYLOAD, "approver", personal=True),
 ), fixed=((PAYLOAD, 512),))  # fmt: skip
+#: One approver's vote, with a list-valued field of their own (the roles they voted in): not a list of people.
+ROLES = Schema("example-vote-roles@2", (
+    Rule("record_kind", KEPT), Rule("approver", PAYLOAD, "approver", personal=True),
+    Rule("approver_roles", PAYLOAD, "approver", personal=True),
+))  # fmt: skip
+#: The same vote where the approver field lists several people and the roles stay one approver's: refused at seal.
+ROLES_LISTED = Schema("example-vote-roles@2", (
+    Rule("record_kind", KEPT), Rule("approver", PAYLOAD, "approver", personal=True, members=True),
+    Rule("approver_roles", PAYLOAD, "approver", personal=True),
+))  # fmt: skip
 STRUCTURAL_ONLY = Schema("example-summary@2", (Rule("record_kind", KEPT), Rule("count", KEPT)))
 CALL = {"name": "act.1", "sha256": "f" * 64}
 
@@ -58,6 +69,9 @@ REFERENCE_KEY = bytes([0x52]) * 32
 LEAF = _bytes("leaf/1", 16)
 NONCE_TAG = ev.NONCE_BYTES + ev.TAG_BYTES
 NONCES = {(role, cls): _bytes(f"nonce/{role}/{cls}", 12) for role in ev.ROLES for cls in (PSEUDONYM, PAYLOAD)}
+#: One key per member of an approver list: each approver is a data subject of their own.
+MEMBER_KEYS = {ev.member_subject(n): _bytes(f"key/{ev.member_subject(n)}", 32) for n in range(2)}
+MEMBER_NONCES = {(s, cls): _bytes(f"nonce/{s}/{cls}", 12) for s in MEMBER_KEYS for cls in (PSEUDONYM, PAYLOAD)}
 
 
 def record(**over: Any) -> dict[str, Any]:
@@ -73,10 +87,12 @@ def _hex(keys: dict[str, bytes]) -> dict[str, str]:
     return {k: v.hex() for k, v in sorted(keys.items())}
 
 
-def _seal_input(schema: Schema, rec: Any, keys: dict[str, bytes], role: str | None) -> dict[str, Any]:
+def _seal_input(schema: Schema, rec: Any, keys: dict[str, bytes], role: str | None,
+                members: bool = False) -> dict[str, Any]:  # fmt: skip
+    nonces = {**NONCES, **MEMBER_NONCES} if members else NONCES
     return {"schema": schema.to_json(), "record": rec, "keys": _hex(keys), "subjectValue": CALL if role else None,
             "subjectRole": role, "leaf": LEAF.hex(),
-            "nonces": {f"{r}/{c}": n.hex() for (r, c), n in sorted(NONCES.items())}}  # fmt: skip
+            "nonces": {f"{r}/{c}": n.hex() for (r, c), n in sorted(nonces.items())}}  # fmt: skip
 
 
 def run(op: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -255,7 +271,72 @@ def vectors() -> list[dict[str, Any]]:
     add("T2", "a v1-style record: a name in clear (any case), an object in clear, an upper-case hex digest and a "
         "base64 digest of JCS bytes are each found", "personal-traces",
         {"signed": canonical(leaky).decode("utf-8"), "personal": canaries})
+    _member_vectors(add)
     return rows
+
+
+def _member_vectors(add: Any) -> None:
+    """An approver list (an approval two people gave) sealed per member: each approver its own subject and key."""
+    pair = [{"issuer": "https://idp.example", "subject": "carol"}, {"issuer": "https://idp.example", "subject": "dave"}]
+    listed = record(approver=["carol@example.com", "dave@example.com"],
+                    principals={"user": record()["principals"]["user"], "approver": pair})
+    keys = {"user": KEYS["user"], **MEMBER_KEYS}
+    sealed = add("S11", "an approver list sealed per member: member n is <path>.<n> under subject approver.<n> and its "
+                 "own key, in its own ciphertext", "seal", _seal_input(SCHEMA, listed, keys, "user", members=True))
+    add("S12", "an approver list under the one approver key names several subjects and is refused", "seal",
+        _seal_input(SCHEMA, listed, KEYS, "user", members=True))
+    add("S13", "an empty approver list names no subject and is refused", "seal",
+        _seal_input(SCHEMA, record(approver=[]), {"user": KEYS["user"], **MEMBER_KEYS}, "user", members=True))
+    kept, erasure, blobs = sealed["kept"], sealed["erasure"], sealed["blobs"]
+    add("O13", "every member key present: the approver lists open in their order", "open",
+        {"kept": kept, "erasure": erasure, "blobs": blobs, "keys": _hex(keys)})
+    gone = {k: v for k, v in keys.items() if k != ev.member_subject(1)}
+    add("O14", "one approver's key destroyed: that approver reads as erased (null in place), the other still opens",
+        "open", {"kept": kept, "erasure": erasure, "blobs": blobs, "keys": _hex(gone)})
+    swapped = {**erasure["roles"], "principals.approver.0": ev.member_subject(1)}
+    add("O15", "a member field under another member's subject is refused", "open",
+        {"kept": kept, "erasure": {**erasure, "roles": swapped}, "blobs": blobs, "keys": _hex(keys)})
+
+    def renumber(block: Any) -> Any:
+        """Members 0 and 2: the list skips a position."""
+        if isinstance(block, dict):
+            return {k.replace("approver.1", "approver.2"): renumber(v) for k, v in block.items()}
+        if isinstance(block, list):
+            return [renumber(v) for v in block]
+        return block.replace("approver.1", "approver.2") if isinstance(block, str) else block
+    add("O16", "an approver list whose members are not 0 to N-1 is refused", "open",
+        {"kept": kept, "erasure": renumber(erasure), "blobs": blobs, "keys": _hex(keys)})
+    one_key = {"user": KEYS["user"], ev.member_subject(0): KEYS["approver"], ev.member_subject(1): KEYS["approver"]}
+    add("S14", "one key passed under two member subjects is one key over the list and is refused", "seal",
+        _seal_input(SCHEMA, listed, one_key, "user", members=True))
+    vote = {"record_kind": "vote", "approver": "carol@example.com", "approver_roles": ["finance", "security"]}
+    add("S15", "one approver's own list under a rule that does not declare members seals whole under the approver "
+        "key, as before approver lists", "seal", _seal_input(ROLES, vote, KEYS, "approver"))
+    add("S16", "a record with an approver list and a field under the one approver key is refused: that key is "
+        "nobody in particular", "seal",
+        _seal_input(ROLES_LISTED, {**vote, "approver": ["carol@example.com", "dave@example.com"]},
+                    {**KEYS, **MEMBER_KEYS}, "approver", members=True))
+    add("S17", "two approver lists of different lengths in one record are refused: member n is not one person",
+        "seal", _seal_input(SCHEMA, {**listed, "approver": ["carol@example.com"]}, keys, "user", members=True))
+    undeclared = Schema("bad@2", (Rule("principals.approver", PSEUDONYM, "approver", personal=True),
+                                  Rule("note", PAYLOAD, "user", members=True)))  # fmt: skip
+    add("L6", "an approver principals rule must declare members, and only an approver rule may", "lint",
+        {"schema": undeclared.to_json()})
+    # The example schema as 0.12.0 released it: its approver rules declare no members. This release refuses it.
+    released = Schema(SCHEMA.name, tuple(Rule(r.path, r.cls, r.subject, personal=r.personal,
+                                              digest_of_personal=r.digest_of_personal, commit=r.commit)
+                                         for r in SCHEMA.rules), SCHEMA.structural)  # fmt: skip
+    add("L7", "the 0.12.0 example schema, whose principals.approver rule declares no members, no longer lints", "lint",
+        {"schema": released.to_json()})
+    add("S18", "a record sealed under the 0.12.0 example schema is refused until its approver rule declares members",
+        "seal", _seal_input(released, record(), KEYS, "user"))
+    other = Schema("bad@2", (Rule("principals.user", PSEUDONYM, "user", personal=True),
+                             Rule("principals.approver", PSEUDONYM, "user", personal=True)))  # fmt: skip
+    add("L8", "a principals.approver rule under another subject's key would seal the list under that one key", "lint",
+        {"schema": other.to_json()})
+    whole = Schema("bad@2", (Rule("record_kind", KEPT), Rule("principals", PAYLOAD, "user", personal=True)))
+    add("L9", "a rule on the whole principals block would seal an approver list under one key", "lint",
+        {"schema": whole.to_json()})
 
 
 def check(rows: list[dict[str, Any]]) -> list[str]:

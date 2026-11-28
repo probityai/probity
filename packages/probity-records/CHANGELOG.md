@@ -1,5 +1,227 @@
 # Changelog
 
+## Unreleased
+
+- **A grant's URL constraints read the URL by one grammar, in both languages.** `url_pattern` and `url_safe` read
+  the URL by `grammar/constraint-url.json` (Python `constraints.url_parts`, TypeScript `urlParts`) instead of
+  `urlsplit` and WHATWG `new URL`, which each repaired text the other refused, so one grant had two verdicts. A URL
+  is now refused, in both readers, when it is not written in the RFC 3986 alphabet (a backslash, a space, a
+  non-ASCII full stop), has fewer than two slashes after the scheme, carries userinfo (an empty one too), a port of
+  0, past 65535 or with a leading zero, a host with an empty label (a trailing dot), a host ending in a number that
+  is not a canonical dotted quad (`127.1`, `0x7f.0.0.1`, `2130706433`), a path with a `.` or `..` segment or an
+  empty segment, or an escape that decodes to a dot, a slash, a backslash or a percent sign. Before, such a path
+  was resolved and then checked; it is now refused. Scheme, host and the grant's host patterns are compared in ASCII
+  lower case. No URL either reader allowed before is newly allowed. `tests/test_constraint_url.py` runs both readers
+  on 21,484 generated URLs and compares the parts and every verdict.
+
+- **One grammar per received text, in both languages.** `grammar/*.json` states what a timestamp, an integer claim, a
+  compact JWS member, a target URI, an X.509 certificate, a stamp field and the trust bundle are; both readers are
+  tested against those files and the differential in `tests/parity_r6c` is generated from them. A timestamp is
+  written in the digits 0 to 9 (Python's `\d` also read other scripts' digits) and is read for years 0001 to 9999
+  (the TypeScript reader refused every year before 100); its value is integer microseconds, a `bigint` in
+  TypeScript. An integer claim (`iat`, `exp`, `nbf`, a DPoP `iat`) beyond 2**53 - 1 is refused, and times are
+  compared as integers. A DPoP `x5c` and a client certificate are read from their DER bytes by one outline walk
+  (`certificate.py`, TypeScript `x509.ts`): PEM text, bytes after the certificate and a length that is not in its
+  shortest form are refused, where Node's parser accepted the first two. A port is leading zeros and at most five
+  digits. A header `alg` or `typ` that is not a string names nothing (TypeScript read a list holding `"EdDSA"` as
+  `"EdDSA"`). A stamp's byte sequence with one base64 digit left over is refused in both readers, its three
+  structured fields parse before its key is looked up, and a field value is trimmed of space and tab only.
+  `TrustBundle.parse` refuses a pin whose roles hold a list or an object instead of raising, and
+  `identity.token_segments` returns None for a signature in a second spelling instead of raising. A test counts
+  text coercion (`str()`, `String()`) and platform text functions in reader code: the request readers have none.
+
+- **A vote, a delegation and quorum evidence are read by type, in both languages.** A vote's `approver`,
+  `onBehalfOf` and `role`, a delegation's `deputy`, `deputyKey` and `roles`, and the evidence's policy id and
+  `proposer` count only when they are strings (`roles` a list of strings), and the TypeScript reader looks a name up
+  among an object's own members only. Before, the TypeScript reader read a list holding `"carol"` as `"carol"`, found
+  an approver, a policy and a proposer named `constructor` in every object, and took a proposer `[]` as present,
+  while the Python reader raised on a `role` that was a list and on a vote with no `decision`. A vote whose
+  `decision` is neither `"approve"` nor `"reject"` is now `vote_shape` in both readers, and a delegation whose `roles`
+  is one text no longer delegates every role that text contains. Evidence whose `policy` is not an object names no
+  pinned policy, and evidence whose `votes` are not a list is `quorum_vote_invalid:vote_shape`; the Python reader
+  raised on both. `vectors/shared/quorum.json` adds QV6 to QV25.
+
+- **One reading of a request target, of base64 and of a token segment, in both languages.** A DPoP `htu` and a stamp
+  `@target-uri` are read by `possession.http_uri_parts` (TypeScript `httpUriParts`): text outside the RFC 3986 URI
+  alphabet (a space, a control byte, a tab or line break, a backslash, a non-ASCII character), userinfo, an empty
+  host and an empty, non-numeric or out-of-range port are refused before any parse. Before, `urlsplit` stripped a
+  leading space or deleted a tab that WHATWG URL parsing kept or rewrote, so the two readers compared different
+  targets. A DPoP `x5c` certificate, approval payloads, envelope payloads and an authority block's `argsB64`
+  (`core.call_args_of`, TypeScript `callArgsOf`) are read as canonical padded base64 only (`core.unb64`), so missing
+  or extra padding, a line break or the URL-safe alphabet is refused in both. The TypeScript principal token reader
+  reads its header and claims through one strict reader (canonical base64url, `TOKEN_MAX_DEPTH`, jcs-admit), refuses
+  a `crit` header as `token_critical_unsupported`, and reads its key through `publicJwk`. Every key reader refuses
+  private key material through one guard (`identity.refuse_private`, TypeScript `refusePrivate`) inside
+  `public_jwk` and `jwk_thumbprint`, and a test finds every reader rather than listing them; a passport holder key or
+  a pinned JWKS carrying private material is now refused.
+
+- **One list of private JWK members, and a differential that reaches every refusal code.** Every key reader refuses
+  the members of `identity.PRIVATE_JWK_MEMBERS` (`d`, `p`, `q`, `dp`, `dq`, `qi`, `oth`, `k`, `priv`); the naming
+  registry, the principal reader and the DPoP header reader used to pass a key carrying `oth`. The key-bound tokens of
+  one request must carry the same `cnf` as RFC 8785 bytes in both readers (Python took `true` for `1`, TypeScript
+  never equated equal nested values), and `possession_record_problem` refuses a list or object `method` instead of
+  raising. The differential in `tests/parity_r6c` now signs edited tokens and DPoP proofs again and judges
+  `check_possession`, `possession_record_problem` and `duplicate_proofs` directly, so each of the 55 registered codes
+  of `verified_identities` and `possession` is reached in both languages, and a code no case reaches fails the run.
+
+- **A public key has one spelling.** `identity.public_jwk` reads a JWK's `x`, `y`, `n` and `e` only in their canonical
+  base64url, an EC coordinate only at the full size of its curve (RFC 7518 section 6.2.1.2), an Ed25519 `x` only at
+  32 bytes, and RSA `n` and `e` only without a leading zero octet (RFC 7518 section 2). `jwk_thumbprint` exists only
+  for such a key, and the JWS checks (`identity`, `registry.verify_signature`) read keys through it. Before, a short
+  EC coordinate verified as the same point under a second thumbprint, a trust bundle could pin a respelled key that
+  the TypeScript reader then decoded leniently, and a respelled stamp key made `TrustBundle.stamp_key` raise. The
+  TypeScript twin's `publicJwk` applies the same rule, and the differential in `tests/parity_r6c` now respells every
+  bundle key of every shared row. A key's `kty` and `crv` name a curve only as strings: a `crv` of `["P-256"]` read as
+  P-256 in TypeScript under a second thumbprint and made the Python lookup raise, and a `kty` of `"constructor"` made
+  the TypeScript thumbprint raise; each is now `jwk_unsupported`.
+- **Every document a stranger can hand the package is read by one strict reader, `core.admitted_loads`.** A repeated
+  member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds, nesting past the reader's
+  depth (128 containers; 32 for a token segment or registry document, `core.TOKEN_MAX_DEPTH`) and, where a caller sets
+  one, more than a byte bound are refused as `core.JsonRefused` (a `ValueError`; its `variant` names the cause). Before,
+  these inputs went to `json.loads`: deep nesting raised `RecursionError` out of a verifier, a repeated member kept
+  the last value, and a lone surrogate reached a canonicalizer and raised. The readers now behind it: the record
+  bundle (envelope, payload, leaf, map commitment), the stamp window field, renewal requests, the anchored statement
+  of a trust bundle, registry documents and tokens, identity-provider token segments (`verified_identities`,
+  `identity.verify_token`), DPoP header and claims, OIDC approval claims, the call arguments of an exception or a
+  grant allow, exports and seals, the journal verifier's key certificates and checkpoint provenance, the journal's
+  own lines, sealed plaintext and the Vault answer. Each answers with its own registered refusal and never raises.
+- **A token or DPoP segment has one spelling, and text a verifier cannot encode is a refusal.** `identity.unb64url`
+  reads only the canonical unpadded base64url of a segment: a space, a newline, padding, a stray last digit or text
+  outside ASCII is refused, where `base64.urlsafe_b64decode` skipped or accepted it, so one token had many spellings
+  and digests. The TypeScript twin's `strictB64url` applies the same rule at every token and DPoP segment, which
+  removes the one disagreement the differential found (`token_malformed` in Python, `token_signature_unverified` in
+  TypeScript). `identity.verify_token` answers `token_malformed` for a token that is not ASCII, and `check_dpop`
+  answers `dpop_malformed` for a proof that is not ASCII (checked before its size) and `dpop_ath_mismatch` for an
+  access token that is not; before, each raised `UnicodeEncodeError`. Comparisons of received claims go through
+  `core.same_text`, which never raises (`hmac.compare_digest` raised `TypeError` on text outside ASCII), and the
+  witness note, checkpoint and policy readers, the receipt map key and the DSSE envelope's `payloadType` refuse a
+  lone surrogate (`core.is_utf8_text`) instead of raising.
+- **New refusal codes:** `anchor_statement_malformed` (the signed payload under a trust anchor is not admissible JSON),
+  `jws_signature_not_low_s` and `passport_kb_critical` (see below). `identity.verify_token` now also answers
+  `token_critical_unsupported` for a token header that demands an extension through `crit`, and `token_malformed` for a
+  header or claim set that is not a JSON object. A hostile `argsB64` in an exception or grant allow is
+  `authority_args_are_not_the_call_arguments`.
+- **An ES256 token is read only in its low-S form (`s <= n/2`) by the registry verifier** (`jws_signature_not_low_s`):
+  ECDSA `(r, s)` and `(r, n - s)` both verify, so one signed statement had two token texts and two digests. An ES256
+  issuer of registry tokens must normalize `s` (`s = n - s` when `s > n/2`) before encoding. The single-use key of a
+  validation is `Validation.spend_key`, `(issuer, jti)`, so the statement is spent once whatever its spelling.
+  Third-party identity-provider tokens (`identity.verify_token`, `verified_identities`) are not held to low-S: about
+  half of the ES256 tokens those providers issue are high-S, and their single-use keys are the `jti`, not the text.
+- **A key binding JWT that demands an extension through `crit` is refused** (`passport_kb_critical`); the issuer JWT
+  already was.
+- **A record bundle's leaf is compared as canonical bytes, not as values.** A leaf spelling `"sequence":true` or `1.0`
+  for sequence 1 compared equal before and is now `bundle_record_mismatch`; the map commitment's `coversSize` must be
+  an integer.
+- **`exports.parse_export` takes `max_bytes` (default `MAX_EXPORT_BYTES`, 128 MiB) and reads through the strict
+  reader**: a repeated member is `jcs_refused:DuplicateMember`, no longer `export_has_duplicate_keys`. The
+  `verify-export` and `compare-seals` commands report an unreadable seal as a failure (exit 1) instead of a traceback.
+- **The TypeScript verifier reads token and DPoP segments the same way** (32 containers deep, strict UTF-8, no lone
+  surrogate), so a segment the Python verifier refuses is refused there with the same code.
+
+- **`approver` names every person an approval counted: one principal, or a list of at least two.** A principals block
+  may now carry `approver` as a list of principals when an approval took several people (an M-of-N quorum); each member
+  is a full principal checked as the single form is, and each must be a person the approval may name. The single form
+  is unchanged and still means one approver. New refusals, under every profile: `principal_approver_duplicate` (a list
+  names one subject twice) and `principal_approver_list_too_short` (a list of fewer than two: one approval takes the
+  single form); a list member that fails the principal checks is refused `principal_approver:<code>`, and one that
+  names a person the approval cannot name is refused `principal_approver_not_an_approval_signer`, as before.
+- **Behaviour change, allows only: strict needs every counted approver named.** A human-session block whose ALLOW
+  counted two or more people and that names only some of them is now `basic`, with the new shortfall
+  `approvers-partial` (`identity.strict_shortfall`, and `principals_below_strict:approvers-partial` from a strict
+  auditor); before, naming any one counted approver was strict. An autonomous block, which has no basic grade, is
+  refused `principals_need_every_approver` in the same case. An intent or effect inherits its permit's allow. A block
+  whose approval counted one person is graded as before.
+- **A deny is graded as before.** A deny counts nobody: its approver principal may name any person whose binding it
+  carries, and strict never needs each of them named. `identity.check_principals` and `strict_shortfall` take the
+  people the approval counted (`counted`) apart from the people the block may name (`approvers`); for an allow they
+  are one set, the default; for a deny `counted` is empty. So a deny resting on two people's bindings that names one
+  of them stays strict (`approver-absent` still applies to a deny that names none), and an autonomous deny of that
+  shape stays `autonomous`. `@probityai/records-verify` takes the same argument (`checkPrincipals(..., counted)`).
+- **Behaviour change: a 0.12.0 schema with a rule on `principals.approver` is refused until it declares `members`.**
+  Such a schema no longer lints (`approver_list_undeclared:principals.approver`), so `seal` refuses every record
+  under it (`schema_refused`), lists or not. Add `members=True` to the approver rule; a record with no approver list
+  then seals byte for byte as 0.12.0 sealed it. `erasure.seal` reads every subject key as bytes: a `bytearray` or a
+  `memoryview` is its bytes (one key under two members is refused in any spelling), and a key that is not bytes-like
+  is refused `subject_key_not_bytes` instead of raising `TypeError`.
+- **Behaviour change: constraint values are compared by one key in both readers (`core.value_key`).** Python compared
+  with `==` and `repr` and the TypeScript twin with a text form, so `true` and `1` were equal in one and different in the
+  other. A `not_one_of` list, a `subset` or `contains` list, `exact` and `one_of`, and the narrowing proof for each now
+  read two values as one when their RFC 8785 bytes are equal: `true` is never `1` (a `not_one_of [1]` now admits `true`,
+  where it denied it), `3` and `3.0` are one number, and object member order is free. A value jcs-admit refuses equals
+  nothing, so a `not_one_of` constraint denies it. New shared vectors: CV12 to CV16.
+- **Behaviour change: an ID or access token is read by one strict rule in both readers.** `identity.verify_token`
+  (and the OpenID Connect approval count) reads a token's header and claims with `identity.token_segments`: three
+  base64url segments without padding, each of header and claims one JSON object that jcs-admit admits. A token with
+  `NaN` or `Infinity`, a duplicate member, a header or claims that is not an object, or an `iat`, `exp` or `nbf` that
+  is not an integer (a float such as `1794301200.0`, a string, a boolean, null) or an `iat` or `exp` outside years 1
+  to 9999 is refused `token_malformed`. Before, Python truncated a float `iat`, read a string one, raised `TypeError`
+  on a null one and counted a token with a `NaN` claim, and the TypeScript twin read each of these another way.
+- **The approver list is a set: its order never changes a verdict or a digest.** A permit's parties are each role's
+  issuer and subject; for a list they are its members' (issuer, subject) pairs in no order, so an intent naming the
+  allow's approvers in another order, or after one approver's credential was refreshed, is the same parties (before,
+  a list compared whole credentials in order, and both read as `principals_differ_from_permit`). Each party is
+  compared by its RFC 8785 bytes with numbers read as IEEE doubles (`core.value_key`, `valueKey` in the TypeScript
+  twin), so two readers give one answer: `1.0` and `1`, `1e16` and `10000000000000000`, and an object written with
+  its members in another order are one value, and `true` is never `1`; a list is the same parties when its members
+  match one for one.
+  `digests.principals_digest` accepts an `approver` list of at least two principal objects and hashes its members
+  sorted by their RFC 8785 bytes, so one set of approvers has one digest in any written order; a list of one, a list
+  with a member that is not an object, and any other role given as a list are refused `identity_principals_malformed`.
+  `identity.approver_principals` and `identity.approver_subjects` read either form.
+- **Erasure seals an approver list per member, where the schema declares one.** A subject key is one person's. A
+  rule declares that its approver field lists several people with `members` (`Rule(..., members=True)`; JSON
+  `"members": true`, written only when set, so a schema without it serializes as before), and `lint_schema` refuses
+  every rule that could seal the identity profile's approver list under one key (`approver_list_undeclared:<path>`):
+  a non-kept rule on `principals.approver` that is not for the approver role with `members` (one for another
+  subject, the user's included, would put every approver under that subject's key), and a non-kept rule on the whole
+  `principals` block. It refuses `members` on any rule that is kept or not for the approver role
+  (`members_outside_approver:<path>`). A list under a declared rule is sealed member by member:
+  member `n` is the field `<path>.<n>` under the subject `approver.<n>`, with its own key and its own ciphertext group,
+  and erasing one approver (destroying that member's key) leaves the others readable; the erased member opens as null
+  in its place. A list under an approver rule without the flag is one approver's own value (the roles they voted in)
+  and seals whole under the `approver` key, byte for byte as 0.12.0 does; the JSON type of a value never decides how
+  many people it names. `erasure.seal` refuses, with `field_names_several_subjects`, a declared list whose members do
+  not each have a key, two members passed one key, declared lists of different lengths in one record (member `n` of
+  every list is one person), and a record with a declared list that also seals a field under the one `approver` key;
+  it refuses an empty list (`approver_list_empty`). `check_block` refuses a member field under another member's
+  subject and a list whose members are not 0 to N-1 (`roles_malformed`). A record with no approver list seals byte
+  for byte as before. `erasure.member_subject(n)` names member n's subject. The erasure block of a record with a list
+  shows how many approvers it has (one `<path>.<n>` entry and one ciphertext group per member).
+- Shared vectors, every case released before this change byte for byte unchanged: `identity.json` adds ID41 to ID55
+  (a list of two, strict; two counted and one named, basic; a subject twice; a list of one; an empty list; a member not
+  counted; a member whose thumbprint does not recompute; a member that is not an object; a list with no approval;
+  autonomous with both named; autonomous with one of two named; an empty list; a deny naming one of two, strict; a deny
+  naming both; an autonomous deny naming one of two; the list in the other order). A vector may carry `counted` apart
+  from `approvers`. `identity_digests.json` adds PD21 to PD25 (PD22: the other order, the same digest). The new family
+  `approvers.json` holds nine journals under a 1-of-2 and a 2-of-2 policy (MA1 to MA9: both named, strict; one named;
+  one named twice; a list naming a replayed approval; an intent naming both; an intent naming one; a deny of two naming
+  one, strict; an intent naming both in the other order; an intent after one approver's credential refresh).
+  `approvers.json` also holds MA10 and MA11 (an intent whose approver is two strings spelling the allow's approver,
+  in either order: malformed, and not the parties of its permit, in both readers). `erasure.json` adds S11 to S17,
+  O13 to O16 and L6 (the per-member seal and its refusals, one key under two members, one approver's own list sealed
+  whole, a list beside a field under the one approver key, lists of different lengths, opening with every key, with
+  one approver's key destroyed, a member under another member's subject, members not 0 to N-1, the `members` lint).
+  `approvers.json` adds MA12 and MA13 (an issuer written `1.0` against `1`, and `1e16` against
+  `10000000000000000`: one number, the same parties). `erasure.json` adds L7 and S18 (the 0.12.0 example schema:
+  no longer lints, and a record under it is refused) and L8 and L9 (a `principals.approver` rule for the user's key,
+  and a rule on the whole `principals` block, each refused). **Six released 0.12.0 erasure vectors give another
+  output for their 0.12.0 inputs:** S1, S2, S4, S5 and S6 are now `schema_refused`, and L1 reports
+  `approver_list_undeclared:principals.approver`, because their schema input is the 0.12.0 example schema. Those
+  vectors now carry the example schema with `members` on its two approver rules, and under it each gives its 0.12.0
+  output byte for byte; L7 and S18 keep the 0.12.0 schema as the vectors of its refusal. A reader that has not
+  learned the list form refuses every vector that carries one; `@probityai/records-verify` learns it in the same
+  change, so both releases go out together.
+- `@probityai/records-verify` reads `TrustDoc.revocations` wherever the Python reader reads `Trust.revocations`: the
+  record's signer key (`signer_key_revoked`) and permit (`permit_revoked`), the agent, sponsor and standing grant of
+  a principals block (`principals_agent_revoked`, `principals_sponsor_revoked`, `principals_standing_grant_revoked`),
+  a grant chain's issuer keys and grants (`grant_deny:grant_issuer_key_revoked:<depth>`,
+  `grant_deny:grant_revoked:<depth>`) and approver keys (`approver_key_revoked`). Before, it read them for approver
+  keys only and passed a journal the Python reader failed.
+- Minor, not patch: this releases as 0.13.0. Vectors that turn a passing implementation red (an allow of several, one
+  named, is now basic; six 0.12.0 erasure vectors whose schema no longer lints; tokens with a float or null time
+  claim or a `NaN` claim, now refused), a schema 0.12.0 accepted that this release refuses, and a new accepted shape
+  make this a minor release under strict semver.
+
 ## 0.12.0 (2026-11-26)
 
 - **The C2SP note verifier agrees with the reference on three cases; two of them refuse input it accepted before.**

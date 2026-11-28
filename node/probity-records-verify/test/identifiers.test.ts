@@ -73,7 +73,7 @@ test("sameIdentifier is true across the two hosts and false for every refused sp
 
 // ---------- the readers ----------
 
-const JOURNAL_FAMILIES = ["grants", "autonomous", "quorum", "constraints", "approvals", "identities", "effects", "received"];
+const JOURNAL_FAMILIES = ["grants", "autonomous", "quorum", "constraints", "approvals", "identities", "approvers", "effects", "received"];
 
 function report(v: any, spelling: { from: string; to: string }): { got: unknown; rewritten: number } {
   const moved = rehostJournal(v.journal, v.checkpoint, spelling.from, spelling.to);

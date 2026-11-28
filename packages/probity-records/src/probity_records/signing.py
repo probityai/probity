@@ -21,7 +21,6 @@ which the journal's checkpoint and every permit carry and an auditor compares wi
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import urllib.request
@@ -41,7 +40,7 @@ from cryptography.hazmat.primitives.serialization import (
     load_der_public_key,
 )
 
-from .core import _b64, _unb64, canonical, key_id, load_public
+from .core import _b64, admitted_loads, canonical, key_id, load_public, unb64
 from .grants import ts as _instant
 
 DELEGATION_DOMAIN = b"probity-key-delegation-v2\x00"
@@ -165,7 +164,7 @@ class VaultTransitKey(_PinnedKey):
         entry = info["keys"].get(str(self.version))
         if not isinstance(entry, Mapping) or "public_key" not in entry:
             raise SigningError(f"Vault transit key {self.name!r} has no version {self.version}")
-        self._public = _raw_public(base64.b64decode(entry["public_key"]))
+        self._public = _raw_public(unb64(entry["public_key"]))
 
     def _call(self, method: str, path: str, body: Mapping[str, Any] | None = None) -> dict[str, Any]:
         token = self.token or os.environ.get("VAULT_TOKEN")
@@ -179,7 +178,7 @@ class VaultTransitKey(_PinnedKey):
         req = urllib.request.Request(f"{self.address.rstrip('/')}/v1/{self.mount}/{path}", data=data,
                                      headers=headers, method=method)
         with self.opener(req, timeout=self.timeout) as resp:
-            answer: dict[str, Any] = json.loads(resp.read())
+            answer: dict[str, Any] = admitted_loads(resp.read())
         return answer
 
     @property
@@ -198,7 +197,7 @@ class VaultTransitKey(_PinnedKey):
                 parts = text.split(":")
                 named = parts[1] if len(parts) > 2 and parts[0] == "vault" else "no version"
                 raise SigningError(f"Vault signed with another key version: {named!r}")
-            return base64.b64decode(text[len(prefix):], validate=True)
+            return unb64(text[len(prefix):])
 
         return self._checked(data, read)
 
@@ -420,7 +419,7 @@ def _body_problem(body: Mapping[str, Any]) -> str | None:
     if not isinstance(body["rootProvenance"], Mapping):
         return "delegation_root_provenance_invalid"
     try:
-        _raw_public(_unb64(body["sessionKey"]))
+        _raw_public(unb64(body["sessionKey"]))
     except (ValueError, SigningError):
         return "delegation_session_key_invalid"
     if not isinstance(body["rootKeyId"], str):
@@ -444,7 +443,7 @@ def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delega
     if problem is not None:
         raise ValueError(problem)
     try:
-        sig = _unb64(certificate["sig"])
+        sig = unb64(certificate["sig"])
     except ValueError:
         raise ValueError("delegation_shape") from None
     message = DELEGATION_DOMAIN + canonical(body)
@@ -455,7 +454,7 @@ def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delega
             continue
         if key_id(root) != body["rootKeyId"]:
             raise ValueError("delegation_root_key_id_mismatch")
-        session = _raw_public(_unb64(body["sessionKey"]))
+        session = _raw_public(unb64(body["sessionKey"]))
         scope = DelegationScope(body["hierarchy"], body["custody"], body["tenant"], body["windowS"])
         return Delegation(session, key_id(session), body["rootKeyId"], scope, body["notBefore"], body["notAfter"])
     raise ValueError("delegation_unverified")

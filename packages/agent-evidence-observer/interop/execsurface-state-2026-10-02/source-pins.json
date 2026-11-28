@@ -44,7 +44,7 @@
     "companion.py": "8fa2c583b92bf233e442a1c6513e4cbbcfd718f5f9013a3fccfea1cd8f0e9fe5",
     "download_binary.py": "930c795954cfeb9254d415d7154ae4967421108ed4813d15986c2cd6f6322119",
     "publication-policy.json": "5db6392a15d17396555986513f948f064ede8a67eb37d7bcd404b7c3408191f9",
-    "requirements.lock": "0d7918115196e40121b2e350e8f01243be59d52b6e590cbdc44525ba84dd5f9b",
+    "requirements.lock": "8a9e019c985eae573aef5924ca493ee36d7f49b011ccc7799b0e0a8e94402662",
     "workload.py": "e14c53fa925a788cad3e363ada32faae67beff7d98109788bd4b5e51d9bdaf91"
   },
   "release": "v0.1.0-alpha.5",
