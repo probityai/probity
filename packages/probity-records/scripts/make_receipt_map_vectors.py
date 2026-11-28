@@ -9,20 +9,22 @@ Run from packages/probity-records:  python scripts/make_receipt_map_vectors.py
 from __future__ import annotations
 
 import hashlib
-import importlib.util
+import importlib
 import json
 import sys
+import types
 from pathlib import Path
 from typing import Any
 
-# the module alone, by path: it needs only the standard library, so the vectors build without the package's
-# dependencies installed
-_PATH = Path(__file__).resolve().parents[1] / "src" / "probity_records" / "receipt_map.py"
-_SPEC = importlib.util.spec_from_file_location("receipt_map_vectors_source", _PATH)
-assert _SPEC is not None and _SPEC.loader is not None
-rm = importlib.util.module_from_spec(_SPEC)
-sys.modules[_SPEC.name] = rm
-_SPEC.loader.exec_module(rm)
+# receipt_map reads its base64 through core.unb64, so it loads as a member of the package, from this checkout's
+# source tree. The package's __init__ is not run (it imports every optional dependency); a bare package object
+# with the source directory as its path is enough for the relative import, and the vectors build in the
+# package's own environment.
+_SRC = Path(__file__).resolve().parents[1] / "src" / "probity_records"
+_PACKAGE = types.ModuleType("probity_records")
+_PACKAGE.__path__ = [str(_SRC)]
+sys.modules.setdefault("probity_records", _PACKAGE)
+rm = importlib.import_module("probity_records.receipt_map")
 
 OUT = Path(__file__).resolve().parents[1] / "vectors" / "shared" / "receipt-map.json"
 

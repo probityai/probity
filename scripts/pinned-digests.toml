@@ -1,0 +1,53 @@
+# Configuration for scripts/pinned-digests.py.
+
+# A pin name that is not a path in the repository, mapped to the file it names.
+[[alias]]
+file = "packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/installed-source-pins.json"
+prefix = "sources/joint/"
+to = "packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/"
+
+[[alias]]
+file = "packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/installed-source-pins.json"
+prefix = "sources/crash/"
+to = "packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/"
+
+# Files with their own recorder. Run it rather than `update` after changing a selected file.
+[[generators]]
+files = "packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/FRAMEWORK-*CONTRACT-2026-10-02.json"
+command = "python packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/record_contracts.py packages/agent-evidence-observer"
+
+# Pins that record other bytes on purpose: a past selection, an upstream file with the same
+# name as one of ours, or a digest of something other than the file's bytes. Each entry says why.
+[[historical]]
+file = "packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/full-tox-source-selection.json"
+reason = "pins files of the upstream ADK checkout the full tox run selected, not repository files"
+
+[[historical]]
+file = "packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/installation-policy.json"
+reason = "pins the modules of the observer revision named in observerRevision"
+
+[[historical]]
+file = "packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05/source-selection.json"
+reason = "the earlier selection; source-selection-runtime-checks.json records it as previousSelection"
+
+[[historical]]
+file = "packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05/source-selection-runtime-checks.json"
+name = "source-selection.json"
+reason = "previousSelection pins the earlier selection on purpose"
+
+[[historical]]
+file = "packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03/implementation-records/SOURCES.json"
+reason = "pins files of the outside implementations at their recorded commits"
+
+[[historical]]
+file = "packages/agent-evidence-observer/interop/pic-aps-refund-reader-2026-10-09/probity_pic_aps_refund/source-selection.json"
+reason = "PIC.packageFiles pins the upstream PIC package at sdkCommit"
+
+[[historical]]
+file = "packages/agent-evidence-verify/docs/recipes.json"
+name = "pyproject.toml"
+reason = "package_metadata digests the install-relevant values, not the file bytes"
+
+[[historical]]
+file = "packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/sdk-contract.json"
+reason = "pins files of the upstream A2A SDK checkout, whose uv.lock is not the repository's"

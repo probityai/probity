@@ -77,10 +77,14 @@ from probity_records.identity_vectors import (
 from probity_records.identity_vectors import base as identity_base
 from probity_records.identity_vectors import second_approver as identity_second_approver
 from probity_records.identity_vectors import vectors as identity_vectors
+from probity_records.journal import GAP_TYPE, JOURNAL_SUBJECT, TORN_TAIL_TYPE
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
+    DEPUTY_DOMAIN,
+    VOTE_DOMAIN,
     approval_policy,
     count,
+    policy_digest,
     request_hash,
     sign_deputy,
     sign_vote,
@@ -251,6 +255,100 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
         phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=evidence, run_id="r1",
         tool_call_id="q1", tool="pay", args_sha256_hex=args_sha256(QARGS), permit_id=QPID))
     return j
+
+
+# ---- quorum members in another JSON type, or named like a member every object inherits ----
+#
+# A vote, a delegation and the evidence are received JSON, so each member may hold any JSON value. These rows sign
+# such values exactly as written (the library's own signers take strings only) and record them as the evidence of a
+# quorum allow: a reader that turns the value into text, or looks a name up among inherited members, answers
+# otherwise than one that reads the type first.
+
+def raw_vote(signer: Signer, request: str = QREQ, **members: object) -> dict:
+    """A vote whose body holds ``members`` as written, signed by ``signer``; a member given as ``...`` is left out."""
+    body = {"approver": None, "decision": "approve", "expiresAt": EXP, "issuedAt": W["issued_at"], "policyId": "pay",
+            "requestHash": request, **members}
+    body = {k: v for k, v in body.items() if v is not ...}
+    return {"body": body, "sig": _b64(signer.sign(VOTE_DOMAIN + canonical(body)))}
+
+
+def raw_deputy(**members: object) -> dict:
+    """Bob's delegation to erin with ``members`` as written, signed by bob."""
+    body = {"delegator": "bob", "deputy": "erin", "deputyKey": raw_public(key("deputy-erin")), "expiresAt": EXP,
+            "notBefore": W["issued_at"], "policyId": "pay", "roles": ["finance"], **members}
+    return {"body": body, "sig": _b64(QKEYS["bob"].sign(DEPUTY_DOMAIN + canonical(body)))}
+
+
+def deputy_vote(delegation: dict, request: str = QREQ, **members: object) -> dict:
+    """Erin's vote on behalf of bob under ``delegation``, with ``members`` as written."""
+    vote_ = raw_vote(key("deputy-erin"), request, **{"approver": "erin", "onBehalfOf": "bob", "role": "finance",
+                                                    **members})
+    return {**vote_, "delegation": delegation}
+
+
+def quorum_raw_case(directory: Path, votes: object, *, proposer: object = "dave", request: str = QREQ,
+                    policy: object = None) -> Journal:
+    """A quorum allow whose evidence is written member by member, never through the counting reader."""
+    evidence = {"historyDigest": "ab" * 32, "kind": "quorum", "policy": POLICY if policy is None else policy,
+                "policyDigest": policy_digest(POLICY), "proposer": proposer, "requestHash": request, "votes": votes}
+    j = Journal(directory, GATE, clock=recording_clock())
+    j.append(TOOL_CALL_RECORD, "tool-call:q1", args_sha256(QARGS), tool_call_predicate(
+        phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=evidence, run_id="r1",
+        tool_call_id="q1", tool="pay", args_sha256_hex=args_sha256(QARGS), permit_id=QPID))
+    return j
+
+
+def quorum_typed_rows() -> list[tuple[str, str, object]]:
+    alice = vote("alice", "security")
+    named = request_hash("pay", args_sha256(QARGS), QPID, proposer="constructor", history="ab" * 32)
+    unnamed = request_hash("pay", args_sha256(QARGS), QPID, proposer=[], history="ab" * 32)  # type: ignore[arg-type]
+    return [
+        ("QV6", "a vote whose approver is a list holding an approver's name, signed by that approver",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver=["carol"], role="finance"), alice])),
+        ("QV7", "a vote whose approver is named constructor, a member every object inherits",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="constructor", role="finance"), alice])),
+        ("QV8", "a deputy's vote on behalf of a list holding the delegator's name",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(), onBehalfOf=["bob"]), alice])),
+        ("QV9", "the evidence's policy id is a list holding the pinned policy's id",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy={**POLICY, "policyId": ["pay"]})),
+        ("QV10", "the evidence's policy id is constructor, which no auditor pinned",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy={**POLICY, "policyId": "constructor"})),
+        ("QV11", "a proposer named constructor is no approver: one rejection leaves the quorum pending, not refused",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], named, approver="carol", role="finance",
+                                                decision="reject")], proposer="constructor", request=named)),
+        ("QV12", "a vote whose role is a list holding a role's name",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="carol", role=["finance"]), alice])),
+        ("QV13", "a deputy named constructor is not an approver, so the deputy's vote counts for bob",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(deputy="constructor"), approver="constructor"), alice])),
+        ("QV14", "a delegation whose deputy key is a number: the vote verifies under no key",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(deputyKey=7)), alice])),
+        ("QV15", "a deputy's role is a list, and the delegation lists that list",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(roles=[["finance"]]), role=["finance"]), alice])),
+        ("QV16", "a delegation whose roles are one text that only contains the role's name",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy(roles="finance-and-more")), alice])),
+        ("QV17", "a vote with no decision",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="carol", role="finance", decision=...),
+                                       alice])),
+        ("QV18", "a vote whose decision is a list holding approve",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], approver="carol", role="finance",
+                                                decision=["approve"]), alice])),
+        ("QV19", "a proposer-bound policy and a proposer that is an empty list, with every vote signed for it",
+         lambda d: quorum_raw_case(d, [raw_vote(QKEYS["carol"], unnamed, approver="carol", role="finance"),
+                                       raw_vote(QKEYS["alice"], unnamed, approver="alice", role="security")],
+                                   proposer=[], request=unnamed)),
+        ("QV20", "a deputy named erin votes for bob with every member a string: the control for QV8 and QV13 to QV16",
+         lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy()), alice])),
+        ("QV21", "the evidence's policy is the pinned policy's id as a text, not the policy",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy="pay")),
+        ("QV22", "the evidence's policy is a list holding the pinned policy",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy=[POLICY])),
+        ("QV23", "the evidence's votes are a number",
+         lambda d: quorum_raw_case(d, 7)),
+        ("QV24", "the evidence's votes are an object holding the two votes",
+         lambda d: quorum_raw_case(d, {"0": vote("carol", "finance"), "1": alice})),
+        ("QV25", "the evidence's votes are an empty text",
+         lambda d: quorum_raw_case(d, "")),
+    ]
 
 
 # ---- constraint edge cases: IPv6 CIDR, shell quoting, int vs float ----
@@ -896,6 +994,49 @@ def identity_rows() -> list[tuple[str, str, object]]:
     ]
 
 
+LOSS_STEP = "https://example.test/step"
+
+
+def loss_case(directory: Path, *, torn: bytes = b"", forged: tuple[str, dict] | None = None,
+              gap: dict | None = None) -> Journal:
+    """Two steps, then the loss a case names: a gap the producer states, torn bytes the next writer cuts with a signed
+    torn-tail line, or a loss line of a forged shape; then one more step."""
+    j = Journal(directory, GATE, clock=recording_clock())
+    for n in (1, 2):
+        j.append(LOSS_STEP, f"step-{n}", "ab" * 32, {"n": n})
+    if gap is not None:
+        j.gap(**gap)
+    if forged is not None:
+        j.append(forged[0], JOURNAL_SUBJECT, "00" * 32, forged[1])
+    if torn:
+        j.path.write_bytes(j.path.read_bytes() + torn)
+        j = Journal(directory, GATE, clock=recording_clock())  # the restarted writer
+    j.append(LOSS_STEP, "step-3", "ab" * 32, {"n": 3})
+    return j
+
+
+def loss_rows() -> list[tuple[str, str, object]]:
+    torn = {"afterSeq": 2, "bytes": 5, "tornSha256": "ab" * 32}
+    return [
+        ("LV1", "a gap line the producer signed between two steps: the journal holds, with the loss stated",
+         lambda d: loss_case(d, gap={"dropped": 3, "after_seq": 2, "reason": "ring_overflow"})),
+        ("LV2", "a restarted writer cut a torn last line and signed a torn-tail line before its next step",
+         lambda d: loss_case(d, torn=b'{"payload":"eyJ')),
+        ("LV3", "a gap line whose dropped count is a string", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": "five", "reason": "ring_overflow"}))),
+        ("LV4", "a gap line with a member the format does not define", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1, "reason": "ring_overflow", "note": "x"}))),
+        ("LV5", "a gap line whose dropped count is the number 1.0", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1.0, "reason": "ring_overflow"}))),
+        ("LV6", "a torn-tail line that places the loss at its own line", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "afterSeq": 3}))),
+        ("LV7", "a torn-tail line whose digest is upper-case hex", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "tornSha256": "AB" * 32}))),
+        ("LV8", "a torn-tail line that removed no bytes", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "bytes": 0}))),
+    ]
+
+
 APPROVAL_TWO_POLICY = approval_policy("refunds2of2", {WHO["ops"]: OPS.public_pem(), WHO["lead"]: LEAD.public_pem()},
                                       2)  # fmt: skip
 
@@ -1067,6 +1208,7 @@ def main(out: Path) -> None:
                 d, [erin, vote("alice", "security")])),
             ("QV5", "the record drops the proposer to let the proposer vote", lambda d: quorum_case(
                 d, [vote("carol", "finance"), vote("alice", "security")], proposer=None)),
+            *quorum_typed_rows(),
         ],
     }
     cases["autonomous"] = [
@@ -1087,6 +1229,7 @@ def main(out: Path) -> None:
     cases["identities"] = identity_rows()
     cases["approvers"] = approver_rows()
     cases["effects"] = effect_rows()
+    cases["loss"] = loss_rows()
     trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
     family_trust = {"autonomous": autonomous_trust(), "identities": identity_trust(), "approvers": approvers_trust()}
     for family, rows in cases.items():

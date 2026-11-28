@@ -18,7 +18,7 @@ from probity_observer.crypto import (
     canonical,
     verify_signature,
 )
-from probity_observer.grant_records import ActionRequest
+from probity_observer.retained_grants import ActionRequest
 
 LOGGER = logging.getLogger(__name__)
 PROFILE = "authority-unreachable-reference-v0"

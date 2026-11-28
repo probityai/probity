@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import json
 
 from probity_records import (
     TOOL_CALL_RECORD,
@@ -113,6 +115,44 @@ def test_escrowed_tokens_reverify_and_a_swapped_claim_is_refused() -> None:
     assert verify_token({**v["principals"]["agent"], "source": "id-jag"}, v["tokens"]["agent"], v["jwks"]) == \
         "token_typ_not_id_jag"
     assert verify_token(user, v["tokens"]["user"], {"keys": []}) == "jwks_digest_mismatch"
+
+
+def _respelled(v: dict, head: bytes, body: bytes | None = None) -> tuple[dict, str]:
+    """The user principal and a token whose header (and claims) are the given bytes, with the digest the principal
+    must carry to reach the token's own parse: the signature is not re-made, so only a refusal that comes before
+    the signature check can answer."""
+    from probity_records.identity import b64url
+
+    _, old_body, sig = v["tokens"]["user"].split(".")
+    new_body = b64url(body) if body is not None else old_body
+    token = f"{b64url(head)}.{new_body}.{sig}"
+    return {**v["principals"]["user"], "tokenDigest": hashlib.sha256(token.encode()).hexdigest()}, token
+
+
+def test_a_token_segment_is_read_by_the_strict_reader_and_refused_not_raised() -> None:
+    v = base()
+    deep = b"[" * 200_000 + b"]" * 200_000
+    for head, body in [
+        (deep, None),                        # RecursionError before: a hostile header is a refusal
+        (None, deep),                        # the claims, the same
+        (b"[]", None),                       # a header that is not an object: AttributeError before
+        (b'"x"', None),
+        (None, b"[1]"),                      # claims that are not an object
+        (b'{"alg":"EdDSA","alg":"none"}', None),   # a repeated member: the last one won before
+        (b'{"alg":"\\ud800"}', None),            # a lone surrogate
+        (None, b'{"sub":"a","sub":"b"}'),
+    ]:
+        head_bytes = head if head is not None else base64.urlsafe_b64decode(v["tokens"]["user"].split(".")[0] + "==")
+        principal, token = _respelled(v, head_bytes, body)
+        assert verify_token(principal, token, v["jwks"]) == "token_malformed", (head, body)
+
+
+def test_a_token_that_demands_an_extension_through_crit_is_refused() -> None:
+    v = base()
+    header = json.loads(base64.urlsafe_b64decode(v["tokens"]["user"].split(".")[0] + "=="))
+    for crit in (["b64"], [], "b64", None):
+        principal, token = _respelled(v, json.dumps({**header, "crit": crit}).encode())
+        assert verify_token(principal, token, v["jwks"]) == "token_critical_unsupported", crit
 
 
 def test_strict_needs_all_four_and_the_act_chain() -> None:

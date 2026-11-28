@@ -63,6 +63,36 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/allow_without_approval_binding"
   },
   {
+   "code": "anchor_predicate_not_authorized",
+   "check": "key.anchor",
+   "meaning": "the anchor that signed the statement may not sign its predicate type",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_predicate_not_authorized"
+  },
+  {
+   "code": "anchor_signed_outside_window",
+   "check": "key.anchor",
+   "meaning": "a witnessed tree head shows the statement was signed outside the anchor's window",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_signed_outside_window"
+  },
+  {
+   "code": "anchor_signing_time_unbound",
+   "check": "key.anchor",
+   "meaning": "the anchor's window or a revocation needs a signing time, and no witnessed tree head holding the statement gives one",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_signing_time_unbound"
+  },
+  {
+   "code": "anchor_statement_malformed",
+   "check": "key.anchor",
+   "meaning": "the payload an anchor signed is not admissible JSON (repeated member, lone surrogate, NaN, nesting too deep)",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_statement_malformed"
+  },
+  {
+   "code": "anchor_unknown",
+   "check": "key.anchor",
+   "meaning": "no signing anchor the pinned trust bundle lists signed the statement",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_unknown"
+  },
+  {
    "code": "approval_auth_not_fresh",
    "check": "approval.oidc",
    "meaning": "the approver's authentication is older than the policy allows",
@@ -291,6 +321,78 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/budget_exhausted"
   },
   {
+   "code": "bundle_checkpoint_refused",
+   "check": "record.bundle",
+   "meaning": "the bundle's checkpoint is not a signed note, or its log line or a pinned witness line does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_checkpoint_refused"
+  },
+  {
+   "code": "bundle_claim_overstated",
+   "check": "record.bundle",
+   "meaning": "the bundle claims a grade or post-quantum status above what the verifier computes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_claim_overstated"
+  },
+  {
+   "code": "bundle_leaf_malformed",
+   "check": "record.bundle",
+   "meaning": "the bundle's leaf is not a canonical decision log leaf",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_leaf_malformed"
+  },
+  {
+   "code": "bundle_leaf_not_included",
+   "check": "record.bundle",
+   "meaning": "the bundle's leaf or map commitment is not in the checkpointed tree",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_leaf_not_included"
+  },
+  {
+   "code": "bundle_log_key_invalid",
+   "check": "record.bundle",
+   "meaning": "the bundle's log key is not an Ed25519 key, or its post-quantum key an ML-DSA-44 key, named after the origin",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_log_key_invalid"
+  },
+  {
+   "code": "bundle_malformed",
+   "check": "record.bundle",
+   "meaning": "the record bundle is not exactly the bundle format",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_malformed"
+  },
+  {
+   "code": "bundle_map_contradiction",
+   "check": "record.bundle",
+   "meaning": "the committed receipt map holds another record for this issuer, permit id and stage",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_map_contradiction"
+  },
+  {
+   "code": "bundle_map_invalid",
+   "check": "record.bundle",
+   "meaning": "the receipt map commitment or proof is malformed, for another key, or does not cover the record",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_map_invalid"
+  },
+  {
+   "code": "bundle_record_invalid",
+   "check": "record.bundle",
+   "meaning": "the bundled record does not verify under its source key or is not its predicate's format",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_record_invalid"
+  },
+  {
+   "code": "bundle_record_kind_unsupported",
+   "check": "record.bundle",
+   "meaning": "the verifier holds no reader for the bundled record's source kind",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_record_kind_unsupported"
+  },
+  {
+   "code": "bundle_record_mismatch",
+   "check": "record.bundle",
+   "meaning": "the bundled record does not state the leaf it is bundled with",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_record_mismatch"
+  },
+  {
+   "code": "bundle_trust_invalid",
+   "check": "record.bundle",
+   "meaning": "the verifier's pinned witnesses or quorum are not a valid trust",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_trust_invalid"
+  },
+  {
    "code": "cel_expression_empty",
    "check": "grants.constraint",
    "meaning": "a CEL expression is not a string, or holds only whitespace",
@@ -343,6 +445,12 @@
    "check": "journal.verify",
    "meaning": "the checkpoint envelope does not open under a trusted key or is malformed",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_invalid"
+  },
+  {
+   "code": "checkpoint_run_mismatch",
+   "check": "journal.verify",
+   "meaning": "the journal checkpoint names another run than the one the verifier pins, or none",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_run_mismatch"
   },
   {
    "code": "child_adds_argument",
@@ -571,6 +679,36 @@
    "check": "gateway.hook",
    "meaning": "a credential's value cannot be recognised and scrubbed from an echo, so it is not injected",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/credential_unscrubbable"
+  },
+  {
+   "code": "dcv_validation_expired",
+   "check": "registry.domain",
+   "meaning": "the domain-control validation is past its reuse window",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dcv_validation_expired"
+  },
+  {
+   "code": "dcv_validation_lifetime_invalid",
+   "check": "registry.domain",
+   "meaning": "the domain-control validation lives longer than the reuse window or ends before it starts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dcv_validation_lifetime_invalid"
+  },
+  {
+   "code": "dcv_validation_malformed",
+   "check": "registry.domain",
+   "meaning": "the domain-control validation has no known method or no token id",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dcv_validation_malformed"
+  },
+  {
+   "code": "dcv_validation_mismatch",
+   "check": "registry.domain",
+   "meaning": "the domain-control validation is for another domain, tenant or canonical id",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dcv_validation_mismatch"
+  },
+  {
+   "code": "dcv_validation_not_yet_valid",
+   "check": "registry.domain",
+   "meaning": "the domain-control validation is issued in the future",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dcv_validation_not_yet_valid"
   },
   {
    "code": "deferred_dispatch_without_stored_principals",
@@ -931,6 +1069,90 @@
    "check": "key.dnssec",
    "meaning": "the record set is a wildcard expansion, which this verifier does not validate",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_wildcard_expansion_unsupported"
+  },
+  {
+   "code": "domain_chain_invalid",
+   "check": "registry.domain",
+   "meaning": "a certificate of the presented chain is not DER",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_chain_invalid"
+  },
+  {
+   "code": "domain_chain_missing",
+   "check": "registry.domain",
+   "meaning": "the key document was pinned with no certificate chain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_chain_missing"
+  },
+  {
+   "code": "domain_chain_unverified",
+   "check": "registry.domain",
+   "meaning": "the presented chain does not verify to the held roots for the domain name",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_chain_unverified"
+  },
+  {
+   "code": "domain_document_expired",
+   "check": "registry.domain",
+   "meaning": "the key document is past its notAfter",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_document_expired"
+  },
+  {
+   "code": "domain_document_malformed",
+   "check": "registry.domain",
+   "meaning": "the key document is not exactly its format, domain, keys and notAfter",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_document_malformed"
+  },
+  {
+   "code": "domain_document_too_large",
+   "check": "registry.domain",
+   "meaning": "the key document is larger than the bound",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_document_too_large"
+  },
+  {
+   "code": "domain_document_wrong_domain",
+   "check": "registry.domain",
+   "meaning": "the key document names, or was pinned for, another domain than the target",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_document_wrong_domain"
+  },
+  {
+   "code": "domain_invalid",
+   "check": "registry.domain",
+   "meaning": "the text is not a fully qualified ASCII domain name",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_invalid"
+  },
+  {
+   "code": "domain_key_malformed",
+   "check": "registry.domain",
+   "meaning": "a published key is not kid, use and jwk, or the list is empty or repeats a kid",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_key_malformed"
+  },
+  {
+   "code": "domain_key_private_material",
+   "check": "registry.domain",
+   "meaning": "a published key carries private key material",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_key_private_material"
+  },
+  {
+   "code": "domain_key_unknown",
+   "check": "registry.domain",
+   "meaning": "the domain publishes no key with that kid",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_key_unknown"
+  },
+  {
+   "code": "domain_key_unsupported",
+   "check": "registry.domain",
+   "meaning": "a published key is of a type or curve the verifier does not accept",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_key_unsupported"
+  },
+  {
+   "code": "domain_key_wrong_use",
+   "check": "registry.domain",
+   "meaning": "the key is published for another use than the one asked",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_key_wrong_use"
+  },
+  {
+   "code": "domain_roots_missing",
+   "check": "registry.domain",
+   "meaning": "no trust roots were given to verify the chain against",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/domain_roots_missing"
   },
   {
    "code": "downgraded_to_user_alone",
@@ -1791,10 +2013,94 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jcs_refused"
   },
   {
+   "code": "journal_gap_invalid",
+   "check": "journal.verify",
+   "meaning": "a gap line is not exactly its members: a dropped count of at least one, a reason, and a position before itself",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/journal_gap_invalid"
+  },
+  {
+   "code": "journal_torn_tail_invalid",
+   "check": "journal.verify",
+   "meaning": "a torn-tail line is not exactly its members: a byte count of at least one, the removed bytes' SHA-256, and a position before itself",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/journal_torn_tail_invalid"
+  },
+  {
    "code": "jwks_digest_mismatch",
    "check": "identity.principals",
    "meaning": "the key set fetched for an issuer is not the one pinned by digest",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jwks_digest_mismatch"
+  },
+  {
+   "code": "jws_claim_invalid",
+   "check": "registry.jws",
+   "meaning": "a claim that must be an integer is not",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_claim_invalid"
+  },
+  {
+   "code": "jws_duplicate_member",
+   "check": "registry.jws",
+   "meaning": "a JSON object repeats a member name",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_duplicate_member"
+  },
+  {
+   "code": "jws_header_critical",
+   "check": "registry.jws",
+   "meaning": "the header demands an extension through crit",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_header_critical"
+  },
+  {
+   "code": "jws_header_names_a_key",
+   "check": "registry.jws",
+   "meaning": "the header names or carries a key (jku, jwk, x5u or x5c)",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_header_names_a_key"
+  },
+  {
+   "code": "jws_issuer_untrusted",
+   "check": "registry.jws",
+   "meaning": "the token names an issuer the verifier holds no pin for",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_issuer_untrusted"
+  },
+  {
+   "code": "jws_key_invalid",
+   "check": "registry.jws",
+   "meaning": "the selected pinned key is not a usable public key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_key_invalid"
+  },
+  {
+   "code": "jws_key_not_pinned",
+   "check": "registry.jws",
+   "meaning": "the selected key is not among the thumbprints the verifier pinned",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_key_not_pinned"
+  },
+  {
+   "code": "jws_kid_unknown",
+   "check": "registry.jws",
+   "meaning": "the kid selects no single pinned key of the issuer",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_kid_unknown"
+  },
+  {
+   "code": "jws_malformed",
+   "check": "registry.jws",
+   "meaning": "the token or one of its segments is not canonical unpadded base64url JSON",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_malformed"
+  },
+  {
+   "code": "jws_signature_not_low_s",
+   "check": "registry.jws",
+   "meaning": "an ES256 signature is in its high-S spelling (s > n/2), the second spelling of one signature, which is never read",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_signature_not_low_s"
+  },
+  {
+   "code": "jws_signature_unverified",
+   "check": "registry.jws",
+   "meaning": "the signature does not verify under the pinned key and its own algorithm",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_signature_unverified"
+  },
+  {
+   "code": "jws_type_mismatch",
+   "check": "registry.jws",
+   "meaning": "the header typ is not one this kind of token carries",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_type_mismatch"
   },
   {
    "code": "key_custody_checkpoint_missing",
@@ -1929,6 +2235,66 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/mtls_certificate_not_yet_valid"
   },
   {
+   "code": "naming_checkpoint_invalid",
+   "check": "registry.naming",
+   "meaning": "the checkpoint is not a signed note of the log, or its signature does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_checkpoint_invalid"
+  },
+  {
+   "code": "naming_checkpoint_unsigned",
+   "check": "registry.naming",
+   "meaning": "the checkpoint carries no signature by the pinned log key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_checkpoint_unsigned"
+  },
+  {
+   "code": "naming_entry_superseded",
+   "check": "registry.naming",
+   "meaning": "the log has a newer leaf for the name than the one presented",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_entry_superseded"
+  },
+  {
+   "code": "naming_head_invalid",
+   "check": "registry.naming",
+   "meaning": "the head is not a signed naming-log head of this log",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_head_invalid"
+  },
+  {
+   "code": "naming_head_stale",
+   "check": "registry.naming",
+   "meaning": "the head was signed too long ago or too far in the future",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_head_stale"
+  },
+  {
+   "code": "naming_head_unsigned",
+   "check": "registry.naming",
+   "meaning": "the head carries no signature by the pinned log key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_head_unsigned"
+  },
+  {
+   "code": "naming_head_wrong_name",
+   "check": "registry.naming",
+   "meaning": "the head states the current leaf of another name",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_head_wrong_name"
+  },
+  {
+   "code": "naming_inclusion_unverified",
+   "check": "registry.naming",
+   "meaning": "the leaf is not in the tree the checkpoint signs",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_inclusion_unverified"
+  },
+  {
+   "code": "naming_leaf_malformed",
+   "check": "registry.naming",
+   "meaning": "the leaf is not exactly the canonical JSON of a naming entry",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_leaf_malformed"
+  },
+  {
+   "code": "naming_wrong_domain",
+   "check": "registry.naming",
+   "meaning": "the naming entry is under another domain than the target",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/naming_wrong_domain"
+  },
+  {
    "code": "no_allow_for_permit",
    "check": "grants.walk",
    "meaning": "the walk finds no allow record for the permit",
@@ -1975,6 +2341,114 @@
    "check": "grants.chain",
    "meaning": "the parent grant allows no further delegation",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/parent_forbids_delegation"
+  },
+  {
+   "code": "passport_disclosure_malformed",
+   "check": "registry.passport",
+   "meaning": "a disclosure is not salt, name and value with a long enough salt",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_disclosure_malformed"
+  },
+  {
+   "code": "passport_disclosure_repeated",
+   "check": "registry.passport",
+   "meaning": "a disclosure, or a disclosed name, appears twice",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_disclosure_repeated"
+  },
+  {
+   "code": "passport_disclosure_reserved",
+   "check": "registry.passport",
+   "meaning": "a disclosure uses a reserved or plain claim name",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_disclosure_reserved"
+  },
+  {
+   "code": "passport_disclosure_unreferenced",
+   "check": "registry.passport",
+   "meaning": "a disclosure has no digest the issuer signed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_disclosure_unreferenced"
+  },
+  {
+   "code": "passport_expired",
+   "check": "registry.passport",
+   "meaning": "the passport is past its expiry",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_expired"
+  },
+  {
+   "code": "passport_holder_invalid",
+   "check": "registry.passport",
+   "meaning": "the passport cnf is not a single supported public key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_holder_invalid"
+  },
+  {
+   "code": "passport_kb_critical",
+   "check": "registry.passport",
+   "meaning": "the key binding JWT demands an extension through crit, which the verifier does not understand",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_critical"
+  },
+  {
+   "code": "passport_kb_malformed",
+   "check": "registry.passport",
+   "meaning": "the key binding JWT is not typ kb+jwt with an integer iat and a nonce",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_malformed"
+  },
+  {
+   "code": "passport_kb_names_a_key",
+   "check": "registry.passport",
+   "meaning": "the key binding header names a key instead of using cnf",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_names_a_key"
+  },
+  {
+   "code": "passport_kb_sd_hash_mismatch",
+   "check": "registry.passport",
+   "meaning": "the key binding covers another presentation than the one sent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_sd_hash_mismatch"
+  },
+  {
+   "code": "passport_kb_stale",
+   "check": "registry.passport",
+   "meaning": "the key binding JWT is too old or issued in the future",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_stale"
+  },
+  {
+   "code": "passport_kb_wrong_audience",
+   "check": "registry.passport",
+   "meaning": "the key binding is bound to another audience",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_wrong_audience"
+  },
+  {
+   "code": "passport_lifetime_invalid",
+   "check": "registry.passport",
+   "meaning": "the passport lives longer than the bound or ends before it starts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_lifetime_invalid"
+  },
+  {
+   "code": "passport_malformed",
+   "check": "registry.passport",
+   "meaning": "the presentation or the passport claims are not in the SD-JWT shape",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_malformed"
+  },
+  {
+   "code": "passport_no_possession",
+   "check": "registry.passport",
+   "meaning": "the presentation has no key binding JWT",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_no_possession"
+  },
+  {
+   "code": "passport_not_yet_valid",
+   "check": "registry.passport",
+   "meaning": "the passport is issued in the future",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_not_yet_valid"
+  },
+  {
+   "code": "passport_possession_unproven",
+   "check": "registry.passport",
+   "meaning": "the key binding JWT is not signed by the passport cnf key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_possession_unproven"
+  },
+  {
+   "code": "passport_sd_alg_unsupported",
+   "check": "registry.passport",
+   "meaning": "the passport names a disclosure digest algorithm other than sha-256",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_sd_alg_unsupported"
   },
   {
    "code": "permit_agent_mismatch",
@@ -2649,6 +3123,162 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/release_unrecorded"
   },
   {
+   "code": "renewal_authority_mismatch",
+   "check": "lifecycle.renewal",
+   "meaning": "the certificate or grant names an authority key other than the pinned root that signed it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_authority_mismatch"
+  },
+  {
+   "code": "renewal_base64_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal record's signature, key or successor is not canonical base64",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_base64_invalid"
+  },
+  {
+   "code": "renewal_certificate_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the instance certificate does not have exactly the certificate members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificate_members_invalid"
+  },
+  {
+   "code": "renewal_certificate_type_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the record is not an instance certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificate_type_invalid"
+  },
+  {
+   "code": "renewal_certificate_window_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the instance certificate's window does not end after it starts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificate_window_invalid"
+  },
+  {
+   "code": "renewal_certificates_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the certificates are not those of one instance with exactly one issuing certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificates_invalid"
+  },
+  {
+   "code": "renewal_counter_gap",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal's counter is not one more than its predecessor's",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_counter_gap"
+  },
+  {
+   "code": "renewal_counter_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal request's counter is below 1, the first renewal",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_counter_invalid"
+  },
+  {
+   "code": "renewal_digest_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal member is not sha256: followed by 64 lowercase hex digits",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_digest_invalid"
+  },
+  {
+   "code": "renewal_grant_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the renewal grant does not have exactly the grant members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_grant_members_invalid"
+  },
+  {
+   "code": "renewal_grant_type_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the record is not a renewal grant",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_grant_type_invalid"
+  },
+  {
+   "code": "renewal_identity_changed",
+   "check": "lifecycle.renewal",
+   "meaning": "the certificates of one instance disagree on agent, build, model or session",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_identity_changed"
+  },
+  {
+   "code": "renewal_instance_mismatch",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal request names another instance than the certificates",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_instance_mismatch"
+  },
+  {
+   "code": "renewal_integer_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal member is not a non-negative integer below 2 to the 53",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_integer_invalid"
+  },
+  {
+   "code": "renewal_key_id_mismatch",
+   "check": "lifecycle.renewal",
+   "meaning": "the key id a renewal request names is not the key that verified it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_key_id_mismatch"
+  },
+  {
+   "code": "renewal_key_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the certified key is not a raw Ed25519 key or its key id is not that key's SHA-256",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_key_invalid"
+  },
+  {
+   "code": "renewal_lease_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the grant's lease is not an object with exactly the lease members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_lease_members_invalid"
+  },
+  {
+   "code": "renewal_lease_window_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the grant's lease does not end after it starts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_lease_window_invalid"
+  },
+  {
+   "code": "renewal_model_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the model is neither undeclared nor an id with an optional digest",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_model_invalid"
+  },
+  {
+   "code": "renewal_record_malformed",
+   "check": "lifecycle.renewal",
+   "meaning": "a signed renewal record is not exactly a body object and a signature",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_record_malformed"
+  },
+  {
+   "code": "renewal_request_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the renewal request does not have exactly the request members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_request_members_invalid"
+  },
+  {
+   "code": "renewal_request_orphaned",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal request continues nothing the chain holds",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_request_orphaned"
+  },
+  {
+   "code": "renewal_request_type_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the record is not a renewal request",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_request_type_invalid"
+  },
+  {
+   "code": "renewal_signature_unverified",
+   "check": "lifecycle.renewal",
+   "meaning": "no pinned root or instance key verifies the renewal record's signature",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_signature_unverified"
+  },
+  {
+   "code": "renewal_successor_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the successor key of a renewal request is not a raw Ed25519 key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_successor_invalid"
+  },
+  {
+   "code": "renewal_text_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal member is not 1 to 512 printable ASCII characters",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_text_invalid"
+  },
+  {
    "code": "retry_without_earlier_permit",
    "check": "journal.verify",
    "meaning": "a retry names no earlier permit",
@@ -3019,6 +3649,30 @@
    "check": "gateway.stamp",
    "meaning": "the stamp names another user than the one that sent the request",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_user_replaced"
+  },
+  {
+   "code": "stamp_window_malformed",
+   "check": "gateway.stamp",
+   "meaning": "the window field is not base64 of the canonical JSON of a certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_malformed"
+  },
+  {
+   "code": "stamp_window_missing",
+   "check": "gateway.stamp",
+   "meaning": "the stamp carries no window certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_missing"
+  },
+  {
+   "code": "stamp_window_outside",
+   "check": "gateway.stamp",
+   "meaning": "the stamp was created outside the half-open window its certificate covers",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_outside"
+  },
+  {
+   "code": "stamp_window_refused",
+   "check": "gateway.stamp",
+   "meaning": "the window certificate does not verify under a pinned root or is not a v2 certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_refused"
   },
   {
    "code": "stamp_wrong_audience",

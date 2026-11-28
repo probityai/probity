@@ -7,14 +7,13 @@ trust the auditor pins (``Trust``): grant issuers, approver keys and quorum poli
 
 from __future__ import annotations
 
-import base64
 import hashlib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
 from . import governance, grants, quorum
-from .core import admitted_loads
+from .core import call_args_of
 from .possession import DEFAULT_SKEW, possession_record_problem
 from .revocation import RevocationState
 
@@ -60,10 +59,14 @@ class Trust:
 
 
 def _args(evidence: Mapping[str, Any], pred: Mapping[str, Any], problems: list[str], where: str) -> Any:
-    raw = base64.b64decode(evidence.get("argsB64", ""))
+    try:
+        raw, args = call_args_of(evidence)  # canonical base64 and admitted JSON, as the TypeScript reader reads them
+    except ValueError:  # bytes the strict readers refuse are not arguments a call carried
+        problems.append(f"{where}:authority_args_are_not_the_call_arguments")
+        return None
     if hashlib.sha256(raw).hexdigest() != pred.get("argsSha256"):
         problems.append(f"{where}:authority_args_are_not_the_call_arguments")
-    return admitted_loads(raw) if raw else None
+    return args
 
 
 def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str,

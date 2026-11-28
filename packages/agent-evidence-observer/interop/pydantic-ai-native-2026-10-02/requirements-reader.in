@@ -1,2 +1,3 @@
 # Offline reader has no Pydantic AI or provider dependency.
 cryptography==50.0.2
+probity-records==0.9.0

@@ -21,11 +21,46 @@ from probity_pydantic_recovery.common import (
     write,
 )
 
+# Population bounds of the host's walk over the selected reader environment.
+# They exist so that an altered or hostile installation cannot make the host
+# enumerate and hash without end; they are not a size budget for the reader.
+# They are set from the measured closure of the locked reader install, with
+# about twice its size as headroom. Measured 26 Nov 2026 on a CPython 3.13
+# `python -m venv` plus `pip install --require-hashes` of
+# requirements-reader.lock (the same steps CI runs): 15,197 files, 18,452
+# entries, 127 MB. The observer's dependency on probity-records brings
+# agent-evidence-vectors (about 12,000 files, almost all its corpora/ data) and
+# cel-expr-python (about 1,600 files) into that closure; the old bounds of 4,096
+# files and 8,192 entries were sized against the closure before it.
+# tests/test_closure_bounds.py holds these bounds above the measured closure.
 MAX_INSTALL_FILE = 64 * 1024 * 1024
 MAX_INSTALL_BYTES = 512 * 1024 * 1024
-MAX_INSTALL_FILES = 4096
-MAX_INSTALL_ENTRIES = 8192
+MAX_INSTALL_FILES = 32768
+MAX_INSTALL_ENTRIES = 65536
 MAX_INSTALL_DEPTH = 32
+
+# The host policy file lists every file of the reader closure, so it scales with
+# the install. Measured 26 Nov 2026 on the same install: 15,175 files, 3.52 MB of
+# canonical JSON. 8 MiB is about 2.4 times that. The packaged reader's own file
+# bound (probity_pydantic_recovery.common.MAX_FILE, 2 MiB) is for packet files
+# and stays, so the reader wheel is unchanged.
+MAX_POLICY_FILE = 8 * 1024 * 1024
+
+
+def read_policy(path: Path) -> bytes:
+    """Read the host policy file under its own size bound."""
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError as error:
+        raise VerificationError("missing-or-linked-file") from error
+    try:
+        require(stat.S_ISREG(os.fstat(descriptor).st_mode), "nonregular-file")
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            raw = handle.read(MAX_POLICY_FILE + 1)
+    finally:
+        os.close(descriptor)
+    require(len(raw) <= MAX_POLICY_FILE, "policy-file-bound")
+    return raw
 
 
 def select_file(path: Path) -> dict[str, Any]:
@@ -142,7 +177,7 @@ def gate(packet: Path, pins: Path, policy_file: Path, policy_sha256: str, execut
 
     ``withheld`` names the record of members a retained packet omits by digest.
     """
-    policy_raw = read(policy_file)
+    policy_raw = read_policy(policy_file)
     require(sha(policy_raw) == policy_sha256, "host-policy-digest")
     policy = strict_loads(policy_raw)
     require(policy == select_policy(pins, executable), "host-reader-selection")

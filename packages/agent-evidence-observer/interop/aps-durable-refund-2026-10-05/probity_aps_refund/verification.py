@@ -22,7 +22,8 @@ from probity_observer.crypto import (
     digest,
     strict_loads,
 )
-from probity_observer.grant_records import (
+from probity_observer import retained_grants
+from probity_observer.retained_grants import (
     ActionRequest,
     GrantPolicy,
     validate_utc_time,
@@ -191,7 +192,7 @@ def verify_refund_result(evidence: dict[str, Any], receipt: dict[str, Any], read
     commitment = refund_decision_digest(report, request, tenant_id=tenant_id,
                                         verifier_sha256=verifier_sha256, sdk_sha256=sdk_sha256)
     result = verify_ticket_result(receipt, readback, request, policy, service_key, grant,
-                                  now=now, decision_digest=commitment, time_precision="milliseconds")
+                                  now=now, decision_digest=commitment, time_precision="milliseconds", grant_verifier=retained_grants)
     verify_aps_observations(evidence, tuple(datetime.fromisoformat(receipt["payload"][name])
         for name in ("intentTime", "effectTime")), report, node=node, verifier=verifier,
         verifier_sha256=verifier_sha256, sdk_sha256=sdk_sha256)

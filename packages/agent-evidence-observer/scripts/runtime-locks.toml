@@ -1,0 +1,37 @@
+# Requirements files under interop/ that never install the observer, so they need not carry
+# its core requirements. scripts/check-runtime-locks.py checks every other one.
+[[exempt]]
+path = "a2a-history-boundary-2026-10-02/native-requirements.lock"
+reason = "native A2A SDK environment; installs native-sdk, not the observer"
+
+[[exempt]]
+path = "a2a-history-boundary-2026-10-02/test-requirements.lock"
+reason = "test tools added beside native-requirements.lock"
+
+[[exempt]]
+path = "adk-current-consumer-2026-10-03/build.lock"
+reason = "build backend only"
+
+[[exempt]]
+path = "adk-current-consumer-2026-10-03/requirements-test-reader.lock"
+reason = "test tools added beside requirements-reader.lock, which is checked"
+
+[[exempt]]
+path = "adk-current-consumer-2026-10-03/tox-tools.lock"
+reason = "tox runner for the upstream ADK suite"
+
+[[exempt]]
+path = "authority-unreachable-2026-10-03/requirements-audit.txt"
+reason = "pip-audit environment, kept apart from the reader"
+
+[[exempt]]
+path = "crewai-job-fences-2026-10-04/requirements-reader.lock"
+reason = "no job installs it; the reader job uses requirements-runtime-reader.lock"
+
+[[exempt]]
+path = "witness-operator-2026-10-03/requirements-reader.lock"
+reason = "no job installs it; both jobs use requirements.lock"
+
+[[exempt]]
+path = "witnessed-run-selection-2026-10-04/requirements-tools.lock"
+reason = "build tools only"

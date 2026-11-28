@@ -40,7 +40,7 @@ from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 
-from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
+from .core import Signer, _b64, canonical, key_id, load_public, sha256_hex, unb64
 from .grants import ts
 from .identifiers import identifier
 
@@ -191,29 +191,35 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
     """(problem, deputy key) for a vote cast on behalf of an approver."""
     body = vote["body"]
     delegation = vote.get("delegation")
-    dbody = delegation.get("body") if isinstance(delegation, Mapping) else None
-    if not isinstance(dbody, dict):
+    if not isinstance(delegation, Mapping) or not isinstance(delegation.get("body"), dict):
         return "deputy_without_delegation", None
-    who = str(body.get("onBehalfOf"))
-    raw = policy["approvers"].get(who)
+    dbody = delegation["body"]
+    who = body.get("onBehalfOf")
+    raw = policy["approvers"].get(who) if isinstance(who, str) else None  # only a string names an approver
     if raw is None or dbody.get("delegator") != who:
         return "deputy_for_unknown_approver", None
     try:
-        load_public(_unb64(raw)).verify(_unb64(delegation.get("sig")), DEPUTY_DOMAIN + canonical(dbody))
+        load_public(unb64(raw)).verify(unb64(delegation.get("sig")), DEPUTY_DOMAIN + canonical(dbody))
     except (InvalidSignature, ValueError, TypeError):
         return "deputy_delegation_unverified", None
-    if dbody.get("policyId") != policy["policyId"] or dbody.get("deputy") != body.get("approver"):
+    deputy = dbody.get("deputy")
+    if dbody.get("policyId") != policy["policyId"] or not isinstance(deputy, str) or deputy != body.get("approver"):
         return "deputy_delegation_mismatch", None
-    if dbody.get("deputy") in policy["approvers"] or dbody.get("deputyKey") in policy["approvers"].values():
+    if deputy in policy["approvers"] or dbody.get("deputyKey") in policy["approvers"].values():
         return "deputy_is_an_approver", None
-    if "role" in body and body["role"] not in dbody.get("roles", []):
-        return "deputy_role_not_delegated", None
+    if "role" in body:  # a role is a string in a list of strings; a list in a list or a part of a text is none
+        role, delegated = body["role"], dbody.get("roles")
+        if not isinstance(role, str) or not isinstance(delegated, list) or role not in delegated:
+            return "deputy_role_not_delegated", None
     try:
         if not ts(dbody["notBefore"]) <= ts(at) <= ts(dbody["expiresAt"]):
             return "deputy_delegation_outside_window", None
     except (KeyError, ValueError, TypeError):
         return "deputy_delegation_outside_window", None
-    return None, str(dbody.get("deputyKey"))
+    deputy_key = dbody.get("deputyKey")
+    if not isinstance(deputy_key, str):  # no key the vote could verify under
+        return "vote_signature_unverified", None
+    return None, deputy_key
 
 
 def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
@@ -221,21 +227,24 @@ def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
     body = vote.get("body") if isinstance(vote, Mapping) else None
     if not isinstance(body, dict):
         return "vote_shape"
+    decision = body.get("decision")
+    if not isinstance(decision, str) or decision not in ("approve", "reject"):
+        return "vote_shape"  # a vote says approve or reject; one that says neither is not counted as either
     if "onBehalfOf" in body:
         problem, raw = _deputy_problem(vote, policy, at)
         if problem:
             return problem
-        counted_as = str(body["onBehalfOf"])
+        counted_as = body["onBehalfOf"]  # a string: _deputy_problem looked it up
     else:
-        raw = policy["approvers"].get(str(body.get("approver")))
-        counted_as = str(body.get("approver"))
+        counted_as = body.get("approver")
+        raw = policy["approvers"].get(counted_as) if isinstance(counted_as, str) else None
     if raw is None:
         return "vote_from_unknown_approver"
-    if proposer is not None and proposer in (counted_as, str(body.get("approver"))):
+    if proposer is not None and proposer in (counted_as, body.get("approver")):
         return "vote_by_proposer"
     try:
-        key = load_public(_unb64(raw))
-        key.verify(_unb64(vote.get("sig")), VOTE_DOMAIN + canonical(body))
+        key = load_public(unb64(raw))
+        key.verify(unb64(vote.get("sig")), VOTE_DOMAIN + canonical(body))
     except (InvalidSignature, ValueError, TypeError):
         return "vote_signature_unverified"
     if body.get("policyId") != policy["policyId"]:
@@ -245,7 +254,7 @@ def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
     roles = policy.get("roles", {})
     if roles:
         role = body.get("role")
-        if role not in roles or counted_as not in roles[role]["members"]:
+        if not isinstance(role, str) or role not in roles or counted_as not in roles[role]["members"]:
             return "vote_role_not_held"
     try:
         live = ts(body["issuedAt"]) <= ts(at) <= ts(body["expiresAt"])
@@ -286,7 +295,7 @@ def count(policy: Mapping[str, Any], request: str, votes: Iterable[Any], at: str
     roles_met = all(filled[r] >= spec["min"] for r, spec in roles.items())
     roles_dead = any(len(spec["members"]) - lost[r] < spec["min"] for r, spec in roles.items())
     if proposer is not None:
-        n -= 1 if proposer in policy["approvers"] else 0
+        n -= 1 if isinstance(proposer, str) and proposer in policy["approvers"] else 0
     if len(yes) >= m and roles_met:
         status = APPROVED
     elif n - len(no) < m or roles_dead:
@@ -308,17 +317,26 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
                      at: str, key_revoked: Callable[[str, str], bool] | None = None) -> str:
     """Offline: ``ok`` or the reason the recorded quorum does not hold. The policy is the one the
     auditor pinned under its id, compared by digest, never the copy inside the record."""
-    policy = evidence.get("policy") or {}
-    trusted = pinned.get(str(policy.get("policyId")))
+    policy = evidence.get("policy")
+    if not isinstance(policy, Mapping):  # a text, a number or a list names no policy
+        policy = {}
+    policy_id = policy.get("policyId")
+    trusted = pinned.get(policy_id) if isinstance(policy_id, str) else None  # only a string names a policy
     if trusted is None:
         return "quorum_policy_not_pinned"
     if policy_digest(trusted) != evidence.get("policyDigest") or policy_digest(policy) != policy_digest(trusted):
         return "quorum_policy_differs_from_pinned"
     if evidence.get("requestHash") != request:
         return "quorum_for_another_request"
-    if trusted.get("proposerBound") and not evidence.get("proposer"):
-        return "quorum_proposer_unbound"
-    result = count(trusted, request, evidence.get("votes") or [], at, key_revoked, evidence.get("proposer"))
+    proposer = evidence.get("proposer")
+    if trusted.get("proposerBound") and not (isinstance(proposer, str) and proposer):
+        return "quorum_proposer_unbound"  # only a non-empty string names a proposer; [] is none, in either language
+    votes = evidence.get("votes")
+    if votes is None:
+        votes = []
+    elif not isinstance(votes, list):  # the votes are a list; any other value is one vote of no shape
+        return "quorum_vote_invalid:vote_shape"
+    result = count(trusted, request, votes, at, key_revoked, proposer)
     if result.ignored:
         return f"quorum_vote_invalid:{result.ignored[0]}"
     if result.status == APPROVED:
@@ -380,8 +398,8 @@ def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, An
             counted.add(who)
             continue
         try:
-            key = load_public(_unb64(raw))
-            key.verify(_unb64(embedded.get("approvalSig")), APPROVAL_DOMAIN + canonical(approval))
+            key = load_public(unb64(raw))
+            key.verify(unb64(embedded.get("approvalSig")), APPROVAL_DOMAIN + canonical(approval))
         except (InvalidSignature, ValueError, TypeError):
             problems.append(f"binding_{n}:approval_signature_unverified")
             continue

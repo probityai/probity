@@ -59,7 +59,16 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 
 from . import celexpr, constraints
-from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
+from .core import (
+    Signer,
+    _b64,
+    canonical,
+    decimal,
+    key_id,
+    load_public,
+    sha256_hex,
+    unb64,
+)
 from .identifiers import identifier
 
 GRANT_DOMAIN = b"probity-grant-v1\x00"
@@ -67,9 +76,23 @@ CAPABILITY_GRANT = identifier("agent-evidence-vectors/predicate/v1/capability-gr
 APPROVAL_LEVELS = ("none", "required")
 
 
-#: The one timestamp grammar (RFC 3339 section 5.6 date-time, at most microseconds), the same as ``ts`` in the
-#: TypeScript verifier. The offset group is optional here only so that its absence is named, never accepted.
-_TIME = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})?")
+#: The one timestamp grammar (``grammar/timestamp.json``: RFC 3339 section 5.6 date-time, at most microseconds, years
+#: 0001 to 9999), the same as ``ts`` in the TypeScript verifier. The digits are 0 to 9 only: ``\d`` in a Python
+#: pattern also matches the digits of every other script, and ``int`` reads them, so one instant would have many
+#: spellings. The offset group is optional here only so that its absence is named, never accepted.
+TIMESTAMP = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,6}))?(Z|[+-][0-9]{2}:[0-9]{2})?")
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+_MICROSECOND = timedelta(microseconds=1)
+
+
+def micros_of(moment: datetime) -> int:
+    """An aware datetime as integer microseconds since 1970-01-01T00:00:00Z, exactly (``timestamp()`` is a float)."""
+    return (moment - _EPOCH) // _MICROSECOND
+
+
+def micros(text: Any) -> int:
+    """The instant an RFC 3339 timestamp names, as integer microseconds since the epoch; ``ValueError`` as ``ts``."""
+    return micros_of(ts(text))
 
 
 def ts(text: Any) -> datetime:
@@ -78,7 +101,7 @@ def ts(text: Any) -> datetime:
     ValueError ``grant_timestamp_offset_missing`` for a date-time with no offset (it names no instant), and
     ``grant_timestamp_invalid`` for anything else outside the grammar, including a field out of range (month 13, hour 24,
     second 60): ``datetime.fromisoformat`` accepts forms the TypeScript verifier refuses, so it is not used."""
-    m = _TIME.fullmatch(text) if isinstance(text, str) else None
+    m = TIMESTAMP.fullmatch(text) if isinstance(text, str) else None
     if m is None:
         raise ValueError("grant_timestamp_invalid")
     year, month, day, hour, minute, second, fraction, offset = m.groups()
@@ -87,13 +110,13 @@ def ts(text: Any) -> datetime:
     if offset == "Z":
         zone = UTC
     else:
-        hours, minutes = int(offset[1:3]), int(offset[4:6])
+        hours, minutes = decimal(offset[1:3]), decimal(offset[4:6])
         if hours > 23 or minutes > 59:
             raise ValueError("grant_timestamp_invalid")
         zone = timezone((-1 if offset[0] == "-" else 1) * timedelta(hours=hours, minutes=minutes))
     try:
-        return datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),
-                        int((fraction or "").ljust(6, "0")), zone)
+        return datetime(decimal(year), decimal(month), decimal(day), decimal(hour), decimal(minute), decimal(second),
+                        decimal((fraction or "").ljust(6, "0")), zone)
     except ValueError:
         raise ValueError("grant_timestamp_invalid") from None
 
@@ -175,7 +198,7 @@ def _validate_tools(tools: Any) -> None:
 def _issuer_key_ok(text: Any) -> bool:
     """``issuerKey`` is the canonical base64 of a 32-byte raw Ed25519 public key (the one the signature names)."""
     try:
-        raw = _unb64(text)
+        raw = unb64(text)
         load_public(raw)
     except (ValueError, TypeError):
         return False
@@ -365,7 +388,7 @@ def _budget_narrowing(child: Any, parent: Any) -> str | None:
 
 def _verify_sig(signed: Mapping[str, Any], raw_key_b64: str) -> bool:
     try:
-        load_public(_unb64(raw_key_b64)).verify(_unb64(signed.get("sig")), GRANT_DOMAIN + canonical(signed["body"]))
+        load_public(unb64(raw_key_b64)).verify(unb64(signed.get("sig")), GRANT_DOMAIN + canonical(signed["body"]))
     except (InvalidSignature, ValueError, TypeError):
         return False
     return True
@@ -398,7 +421,7 @@ def _structure(chain: list[Mapping[str, Any]], root_key_ids: frozenset[str]) -> 
             break
         try:
             validate_body(body)
-            issuer_id = key_id(load_public(_unb64(body["issuerKey"])))
+            issuer_id = key_id(load_public(unb64(body["issuerKey"])))
         except (ValueError, KeyError, TypeError) as exc:
             result = f"grant_invalid:{depth}:{exc}"
             break

@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from .clock import SystemClock
-from .core import Signer
+from .core import Signer, admitted_loads
 from .exports import EXPORT_KINDS, compare_seals, seal_export, verify_export_seal
 from .journal import timestamp
 
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.check is None:
             print(json.dumps(vectors(), indent=2, sort_keys=True))
             return 0
-        bad = check(json.loads(args.check.read_text()))
+        bad = check(admitted_loads(args.check.read_bytes()))
         print(json.dumps({"differ": bad}))
         return 1 if bad else 0
     if args.cmd == "seal-export":
@@ -55,14 +55,22 @@ def main(argv: list[str] | None = None) -> int:
         args.out.write_text(json.dumps(envelope, indent=2, sort_keys=True) + "\n")
         return 0
     if args.cmd == "verify-export":
-        report = verify_export_seal(json.loads(args.seal.read_text()), args.export.read_bytes(),
-                                    [p.read_bytes() for p in args.pub])
+        try:
+            seal_doc = admitted_loads(args.seal.read_bytes())
+        except ValueError as exc:  # a seal the strict reader refuses is a failed check, not a traceback
+            print(json.dumps({"verdict": "FAIL", "failures": [f"seal:{exc}"]}, sort_keys=True))
+            return 1
+        report = verify_export_seal(seal_doc, args.export.read_bytes(), [p.read_bytes() for p in args.pub])
         print(json.dumps({k: report[k] for k in ("verdict", "failures")}, sort_keys=True))
         census = report["census"] or {}
         print(f"records {census.get('records')} missing ids {census.get('missingIds')}")
         return 0 if report["verdict"] == "PASS" else 1
-    print(json.dumps(compare_seals(json.loads(args.older.read_text()), json.loads(args.newer.read_text())),
-                     sort_keys=True))
+    try:
+        moved = compare_seals(admitted_loads(args.older.read_bytes()), admitted_loads(args.newer.read_bytes()))
+    except (ValueError, KeyError, TypeError) as exc:
+        print(json.dumps({"error": f"seals_unreadable:{exc}"}, sort_keys=True))
+        return 1
+    print(json.dumps(moved, sort_keys=True))
     return 0
 
 

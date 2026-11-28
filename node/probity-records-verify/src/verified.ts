@@ -3,10 +3,11 @@
 // refusal code, as the Python package on every vector in packages/probity-records/vectors/shared/verified_identities.json.
 // The verifying key never comes from the presented data: the trust bundle pins each issuer's keys by RFC 7638
 // thumbprint, scoped to roles and tenants. Spec: packages/probity-records/docs/verified-identities.md.
-import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
+import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parsePy, ts } from "./verify.ts";
+import { MICROS, IdentityDigestError, actChainDigest, asciiLower, cnfProblem, decimal, exactInt, floorDiv, hasPrivateMember, jwkThumbprint, publicJwk, strictB64url, tokenSegmentJson, ts, unb64, valueKey } from "./verify.ts";
+import { CertificateRefused, certificateFacts, spkiKey } from "./x509.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -16,12 +17,14 @@ export const COVERED = ["@method", "@target-uri", "@authority", "content-digest"
 const STAMP_PARAMS = ["alg", "created", "expires", "keyid", "nonce", "tag"];
 export const MAX_TTL_SECONDS = 300;
 const MAX_NONCE_BYTES = 128;
+const NANOS = 1000000000n;
 const TOKEN_ROLES = ["user", "agent", "sponsor"] as const;
 const PIN_ROLES = [...TOKEN_ROLES, "stamp"];
 const ROLE_TYPES: Record<string, (string | null)[]> = { user: ["at+jwt", "oauth-id-jag+jwt"], agent: ["at+jwt"], sponsor: [null, "jwt"] };
 const KEY_REFERENCES = ["jku", "jwk", "x5u", "x5c"];
-const BUNDLE_MEMBERS = ["audience", "environment", "issuers", "profile", "tenant", "version"];
-const PRIVATE_JWK = ["d", "p", "q", "dp", "dq", "qi", "k", "oth"];
+const BUNDLE_MEMBERS = ["anchors", "audience", "environment", "issuers", "profile", "tenant", "version"];
+const ANCHOR_MEMBERS = ["jwk", "notAfter", "notBefore", "predicateTypes", "role", "status", "thumbprint"];
+const ANCHOR_STATUSES = ["active", "retired", "revoked"];
 const MIN_RSA_BITS = 2048;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
@@ -36,61 +39,77 @@ const isObj = (v: J): boolean => v !== null && typeof v === "object" && !Array.i
 const sameKeys = (v: J, keys: string[]): boolean => isObj(v) && Object.keys(v).sort().join("\0") === [...keys].sort().join("\0");
 const b64u = (data: Buffer): string => data.toString("base64url");
 const sha256Hex = (data: Buffer | string): string => createHash("sha256").update(data).digest("hex");
-const isInt = (holder: J, key: string): boolean => typeof holder[key] === "number" && Number.isInteger(holder[key]) && !isFloat(holder, key, holder[key]);
+// A received integer is one both readers hold exactly (grammar/integer.json): 2**53 and 2**53 + 1 are one double.
+const isInt = exactInt;
 const utf8Len = (s: string): number => Buffer.byteLength(s, "utf8");
 
-// --- strict JSON segments: a repeated member is refused, as Python's object_pairs_hook refuses it ----------------
+// --- strict JSON segments: read like probity_records.core.admitted_loads with TOKEN_MAX_DEPTH ------------------
 
 class Duplicate extends Error {}
 
-function noDuplicates(text: string): void {
-  const stack: { obj: boolean; keys: Set<string>; expectKey: boolean }[] = [];
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') {
-      let j = i + 1;
-      while (j < text.length && text[j] !== '"') j += text[j] === "\\" ? 2 : 1;
-      const top = stack[stack.length - 1];
-      if (top?.obj && top.expectKey) {
-        const key = JSON.parse(text.slice(i, j + 1)) as string;
-        if (top.keys.has(key)) throw new Duplicate("duplicate");
-        top.keys.add(key);
-        top.expectKey = false;
-      }
-      i = j;
-    } else if (ch === "{" || ch === "[") stack.push({ obj: ch === "{", keys: new Set(), expectKey: ch === "{" });
-    else if (ch === "}" || ch === "]") stack.pop();
-    else if (ch === ",") { const top = stack[stack.length - 1]; if (top?.obj) top.expectKey = true; }
-  }
-}
-
 function segmentJson(segment: string): J {
-  const text = Buffer.from(segment, "base64url").toString("utf8");
-  noDuplicates(text);
-  return parsePy(text);
+  try { return tokenSegmentJson(segment); }  // one reader with verify.ts's tokenSegments (core.TOKEN_MAX_DEPTH)
+  catch (e) { throw (e as Error).message === "jcs_refused:DuplicateMember" ? new Duplicate("duplicate") : e; }
 }
 
 // --- the trust bundle -------------------------------------------------------------------------------------------
 
 interface PinnedKey { jwk: J; thumbprint: string; roles: Set<string>; tenants: Set<string> }
-export interface TrustBundle { environment: string; tenant: string; audience: string; profile: string; issuers: Map<string, PinnedKey[]> }
+/** A signing anchor (probity_records.trust_bundle): shape only here; verifying a statement under one is Python's. */
+export interface Anchor { jwk: J; thumbprint: string; role: string; status: string; notBefore: string; notAfter: string | null; predicateTypes: string[] }
+export interface TrustBundle { environment: string; tenant: string; audience: string; profile: string; issuers: Map<string, PinnedKey[]>; anchors: Anchor[] }
 
 const isStampKey = (jwk: J): boolean => jwk.kty === "OKP" && jwk.crv === "Ed25519" && typeof jwk.x === "string";
 const stampKeyId = (raw: Buffer): string => sha256Hex(raw);
-const rawOf = (jwk: J): Buffer => Buffer.from(String(jwk.x), "base64url");
+// Only for a key the bundle admitted (a canonical 32-byte x, publicJwk); strict anyway, as identity.unb64url is.
+const rawOf = (jwk: J): Buffer => strictB64url(jwk.x);
 const distinctNames = (v: J): boolean => Array.isArray(v) && v.length > 0 && v.every((t) => typeof t === "string" && t !== "") && new Set(v).size === v.length;
 
 export function parseBundle(doc: J): TrustBundle {
   const bad = (detail: string): never => refuse("trust_bundle_malformed", detail);
-  if (!sameKeys(doc, BUNDLE_MEMBERS)) bad("a bundle has exactly its six members");
-  if (doc.version !== 1) bad("version is 1");
+  if (!sameKeys(doc, BUNDLE_MEMBERS)) bad("a bundle has exactly its seven members");
+  if (doc.version !== 2) bad("version is 2");
   try { new Ref("service", doc.environment, "bundle", "probe"); } catch { bad("environment is an identity environment"); }
   for (const name of ["tenant", "audience"]) if (typeof doc[name] !== "string" || doc[name] === "") bad(`${name} is a non-empty string`);
   if (doc.profile !== "basic" && doc.profile !== "strict") bad("profile is basic or strict");
-  if (!isObj(doc.issuers) || Object.keys(doc.issuers).length === 0) bad("issuers is a non-empty object");
+  if (!isObj(doc.issuers)) bad("issuers is an object");
+  const anchors = parseAnchors(doc.anchors);
+  if (Object.keys(doc.issuers).length === 0 && anchors.length === 0) bad("a bundle pins at least one issuer or one anchor");
   const issuers = new Map<string, PinnedKey[]>();
   for (const [url, entry] of Object.entries(doc.issuers as Record<string, J>)) issuers.set(url, parseIssuer(url, entry));
-  return { environment: doc.environment, tenant: doc.tenant, audience: doc.audience, profile: doc.profile, issuers };
+  return { environment: doc.environment, tenant: doc.tenant, audience: doc.audience, profile: doc.profile, issuers, anchors };
+}
+
+function parseAnchors(entries: J): Anchor[] {
+  const bad = (detail: string): never => refuse("trust_bundle_malformed", detail);
+  if (!Array.isArray(entries)) bad("anchors is a list");
+  const seen = new Set<string>();
+  const time = (v: J, what: string): string => { try { ts(v); } catch { bad(`anchor ${what} is an RFC 3339 time with an offset`); } return v; };
+  return (entries as J[]).map((a) => {
+    if (!sameKeys(a, ANCHOR_MEMBERS)) bad("an anchor has exactly its seven members");
+    const jwk = a.jwk;
+    if (!isObj(jwk) || hasPrivateMember(jwk)) bad("an anchor key is a public JWK");
+    if (!isStampKey(jwk)) bad("an anchor key is an Ed25519 OKP key");
+    let x = Buffer.alloc(0);
+    try { x = rawOf(jwk); } catch { bad("an anchor key's x is 32 base64url bytes"); }
+    if (x.length !== 32) bad("an anchor key's x is 32 base64url bytes");
+    if (a.thumbprint !== jwkThumbprint(jwk)) bad("an anchor's thumbprint is the RFC 7638 thumbprint of its key");
+    if (typeof a.role !== "string" || a.role === "" || !/^[\x00-\x7f]*$/.test(a.role)) bad("an anchor's role is a non-empty ASCII name");
+    if (!ANCHOR_STATUSES.includes(a.status)) bad("an anchor's status is active, retired or revoked");
+    const notBefore = time(a.notBefore, "notBefore");
+    const notAfter = a.notAfter === null ? null : time(a.notAfter, "notAfter");
+    if (notAfter === null && a.status !== "active") bad("a retired or revoked anchor names the end of its window (notAfter)");
+    if (notAfter !== null && !(ts(notBefore) < ts(notAfter))) bad("an anchor's notAfter is after its notBefore");
+    const types = a.predicateTypes;
+    if (!Array.isArray(types) || !types.length || new Set(types).size !== types.length
+        || !types.every((t: J) => typeof t === "string" && t.startsWith("https://") && /^[\x00-\x7f]*$/.test(t) && !t.includes(" "))) {
+      bad("predicateTypes is a non-empty list of distinct https URIs");
+    }
+    const raw = rawOf(jwk).toString("hex");
+    if (seen.has(raw)) bad("an anchor key is listed twice");
+    seen.add(raw);
+    return { jwk, thumbprint: a.thumbprint, role: a.role, status: a.status, notBefore, notAfter, predicateTypes: types };
+  });
 }
 
 function parseIssuer(url: string, entry: J): PinnedKey[] {
@@ -100,14 +119,10 @@ function parseIssuer(url: string, entry: J): PinnedKey[] {
   if (!Array.isArray(entry.keys) || !entry.keys.length || !Array.isArray(entry.pins) || !entry.pins.length) bad("keys and pins are non-empty lists");
   const byThumb = new Map<string, J>();
   for (const jwk of entry.keys) {
-    if (!isObj(jwk) || Object.keys(jwk).some((k) => PRIVATE_JWK.includes(k))) bad("a key is a public JWK");
+    if (!isObj(jwk) || hasPrivateMember(jwk)) bad("a key is a public JWK");
     let thumb = "";
     try { thumb = jwkThumbprint(jwk); } catch { bad("a key has no RFC 7638 thumbprint"); }
-    if (jwk.kty === "RSA") {
-      const n = Buffer.from(String(jwk.n), "base64url");
-      let start = 0; while (start < n.length && n[start] === 0) start++;
-      if ((n.length - start) * 8 < MIN_RSA_BITS) bad(`an RSA key shorter than ${MIN_RSA_BITS} bits`);
-    }
+    if (jwk.kty === "RSA" && publicJwk(jwk).n.length * 8 < MIN_RSA_BITS) bad(`an RSA key shorter than ${MIN_RSA_BITS} bits`);
     if (byThumb.has(thumb)) bad("a key is listed twice");
     byThumb.set(thumb, jwk);
   }
@@ -133,7 +148,7 @@ function admit(bundle: TrustBundle, key: PinnedKey, role: string): PinnedKey {
 
 function pinnedKey(bundle: TrustBundle, issuer: J, role: string, kid: J): PinnedKey {
   const keys = typeof issuer === "string" ? bundle.issuers.get(issuer) : undefined;
-  if (keys === undefined) return refuse("principal_issuer_untrusted", String(issuer).slice(0, 80));
+  if (keys === undefined) return refuse("principal_issuer_untrusted");
   const matches = keys.filter((k) => typeof kid === "string" && k.jwk.kid === kid);
   if (matches.length !== 1) return refuse("token_kid_unknown");
   return admit(bundle, matches[0], role);
@@ -151,6 +166,7 @@ function stampKey(bundle: TrustBundle, keyid: string): PinnedKey {
 function publicKey(jwk: J): KeyObject {
   const members = jwk.kty === "RSA" ? ["kty", "n", "e"] : jwk.kty === "EC" ? ["kty", "crv", "x", "y"] : ["kty", "crv", "x"];
   const key: J = {}; for (const m of members) key[m] = jwk[m];
+  publicJwk(jwk);  // identity.public_jwk: one spelling only (Node's own import reads others), nothing private
   return createPublicKey({ key, format: "jwk" });
 }
 
@@ -175,7 +191,7 @@ function seconds(claims: J, name: string): number {
   return claims[name];
 }
 
-function verifyToken(role: string, token: J, bundle: TrustBundle, when: number): Token {
+function verifyToken(role: string, token: J, bundle: TrustBundle, when: bigint): Token {  // when: microseconds
   const parts = typeof token === "string" && /^[\x00-\x7f]*$/.test(token) ? token.split(".") : [];
   if (parts.length !== 3 || parts.some((p) => p === "")) refuse("token_malformed", `the ${role} credential is not a compact JWS`);
   let header: J, claims: J;
@@ -186,9 +202,12 @@ function verifyToken(role: string, token: J, bundle: TrustBundle, when: number):
   if (typeof claims.iss !== "string" || !bundle.issuers.has(claims.iss)) refuse("principal_issuer_untrusted");
   const key = pinnedKey(bundle, claims.iss, role, header.kid);
   let typ: J = "typ" in header ? header.typ : null;
-  if (typeof typ === "string") { typ = typ.toLowerCase(); if (typ.startsWith("application/")) typ = typ.slice(12); }
+  if (typeof typ === "string") { typ = asciiLower(typ); if (typ.startsWith("application/")) typ = typ.slice(12); }
   if (!ROLE_TYPES[role].includes(typ)) refuse("token_type_mismatch");
-  if (!verifyJws(String(header.alg), key.jwk, Buffer.from(`${parts[0]}.${parts[1]}`, "ascii"), Buffer.from(parts[2], "base64url"))) {
+  let signature: Buffer;
+  try { signature = strictB64url(parts[2]); } catch { return refuse("token_malformed", "the signature is not base64url"); }
+  // RFC 7515 section 4.1.1: alg is a string; a list or any other value names no algorithm (String(["EdDSA"]) is "EdDSA").
+  if (typeof header.alg !== "string" || !verifyJws(header.alg, key.jwk, Buffer.from(`${parts[0]}.${parts[1]}`, "ascii"), signature)) {
     refuse("token_signature_unverified");
   }
   const client = role !== "sponsor" ? claims.client_id : ("azp" in claims ? claims.azp : claims.client_id);
@@ -197,9 +216,10 @@ function verifyToken(role: string, token: J, bundle: TrustBundle, when: number):
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!audiences.includes(bundle.audience)) refuse("token_wrong_audience");
   if (exp <= iat) refuse("token_malformed", "exp is not after iat");
-  if (when < iat) refuse("principal_not_yet_valid");
-  if ("nbf" in claims && seconds(claims, "nbf") > when) refuse("token_not_yet_valid");
-  if (when >= exp) refuse("principal_expired");
+  // Integers against integers: `when` is microseconds, and a claim is at most 2**53 - 1 seconds.
+  if (when < BigInt(iat) * MICROS) refuse("principal_not_yet_valid");
+  if ("nbf" in claims && BigInt(seconds(claims, "nbf")) * MICROS > when) refuse("token_not_yet_valid");
+  if (when >= BigInt(exp) * MICROS) refuse("principal_expired");
   return { role, raw: token, issuer: claims.iss, subject: claims.sub, client, claims };
 }
 
@@ -228,7 +248,7 @@ function identityFromTokens(found: Record<string, Token>, bundle: TrustBundle): 
   }
   if (chainActors.length && chainActors[0].sub !== agent.subject && chainActors[0].sub !== agent.client) refuse("principal_act_names_another_agent");
   if (user.client !== agent.client) refuse("principal_user_token_not_issued_to_agent");
-  const parents = chainActors.slice(1).map((a) => new Ref("agent", env, String(a.iss ?? user.issuer), a.sub));
+  const parents = chainActors.slice(1).map((a) => new Ref("agent", env, "iss" in a ? a.iss : user.issuer, a.sub));
   let act: string | undefined;
   if ("act" in user.claims) {
     try { act = actChainDigest(user.claims.act, user.claims, "act"); } catch (e) {
@@ -268,32 +288,57 @@ function eq(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-/** possession.normalize_htu, with Python's urlsplit split rules. */
-export function normalizeHtu(url: string): string {
-  const m = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)/.exec(url);
-  const scheme = m ? m[1].toLowerCase() : "";
-  let netloc = m ? m[2] : "";
-  netloc = netloc.slice(netloc.lastIndexOf("@") + 1);
-  let host = netloc, portText = "";
-  const bracket = /^\[([^\]]*)\](?::(.*))?$/.exec(netloc);
-  if (bracket) { host = bracket[1]; portText = bracket[2] ?? ""; }
-  else if (netloc.includes(":")) { host = netloc.slice(0, netloc.indexOf(":")); portText = netloc.slice(netloc.indexOf(":") + 1); }
-  host = host.toLowerCase();
-  if ((scheme !== "https" && scheme !== "http") || !host) throw new Error("htu_not_absolute");
-  let port: number | null = null;
-  if (portText !== "") {
-    if (!/^\d+$/.test(portText) || +portText > 65535) throw new Error("port");
-    port = +portText;
+// possession.normalize_htu, the same rules in the same order. RFC 3986 section 2: the only characters a URI is written
+// with (unreserved, reserved, and "%" followed by two hex digits); a space, a control byte, a tab or line break, a
+// non-ASCII character or a backslash makes the text something other than the request URI (RFC 9449 section 4.3).
+const URI_TEXT = /^(?:[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*$/;
+// scheme "://" authority path, then a query or fragment (RFC 3986 section 3).
+const HTU_PARTS = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)([?#][^]*)?$/;
+const IP_LITERAL = /^\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?$/;
+const REG_NAME = /^[A-Za-z0-9\-._~!$&'()*+,;=%]+$/;
+// grammar/target-uri.json: any number of leading zeros, then at most five digits; never a number read from the whole run.
+export const PORT = /^0*([0-9]{1,5})$/;
+const URI_DEFAULT_PORTS: Record<string, number> = { http: 80, https: 443 };
+
+/** possession.http_uri_parts: [scheme, host, port, path, rest] of an absolute http or https URI written in the RFC
+ *  3986 alphabet, the one reader of a request target here (a DPoP htu, a stamp's @target-uri). Scheme and host lower
+ *  case, a bracketed IP literal keeps its brackets; userinfo, an empty host and an empty, non-numeric or out-of-range
+ *  port throw, as does any character outside the alphabet. */
+export function httpUriParts(url: string): [string, string, number | null, string, string] {
+  if (typeof url !== "string" || !URI_TEXT.test(url)) throw new Error("uri_not_in_the_uri_alphabet");
+  const parts = HTU_PARTS.exec(url);
+  if (parts === null) throw new Error("uri_not_absolute");
+  const scheme = asciiLower(parts[1]), authority = parts[2], path = parts[3], rest = parts[4] ?? "";
+  if (!Object.hasOwn(URI_DEFAULT_PORTS, scheme) || authority.includes("@")) throw new Error("uri_not_absolute");
+  let host: string, portText: string | null;
+  const literal = IP_LITERAL.exec(authority);
+  if (literal !== null) { host = `[${asciiLower(literal[1])}]`; portText = literal[2] ?? null; }
+  else if (authority.includes("[") || authority.includes("]")) throw new Error("uri_not_absolute");
+  else {
+    const colon = authority.indexOf(":");
+    host = asciiLower(colon < 0 ? authority : authority.slice(0, colon));
+    portText = colon < 0 ? null : authority.slice(colon + 1);
+    if (!REG_NAME.test(host)) throw new Error("uri_not_absolute");
   }
-  const authority = port === null || (scheme === "https" && port === 443) || (scheme === "http" && port === 80) ? host : `${host}:${port}`;
-  return `${scheme}://${authority}${m![3] || "/"}`;
+  if (portText === null) return [scheme, host, null, path, rest];
+  const digits = PORT.exec(portText);
+  if (digits === null || decimal(digits[1]) > 65535) throw new Error("uri_port_invalid");
+  return [scheme, host, decimal(digits[1]), path, rest];
+}
+/** possession.uri_authority: the host, with the port only when it is not the scheme's default. */
+function uriAuthority(scheme: string, host: string, port: number | null): string {
+  return port === null || port === URI_DEFAULT_PORTS[scheme] ? host : `${host}:${port}`;
+}
+/** possession.normalize_htu: scheme and host lower case, default port dropped, no query or fragment, an empty path as
+ *  "/"; throws as httpUriParts does. */
+export function normalizeHtu(url: string): string {
+  const [scheme, host, port, path] = httpUriParts(url);
+  return `${scheme}://${uriAuthority(scheme, host, port)}${path || "/"}`;
 }
 
 function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | null, string | null] {
   let h: J;
   try {
-    const raw = Buffer.from(segment, "base64url");
-    if (b64u(raw) !== segment) return ["", null, "dpop_malformed"];
     h = segmentJson(segment);
   } catch (e) { return ["", null, e instanceof Duplicate ? "dpop_duplicate_member" : "dpop_malformed"]; }
   if (!isObj(h)) return ["", null, "dpop_malformed"];
@@ -303,43 +348,41 @@ function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | 
   if (alg !== "ES256" && alg !== "EdDSA") return ["", null, "dpop_alg_not_allowed"];
   const jwk = h.jwk;
   if (!isObj(jwk)) return ["", null, "dpop_jwk_invalid"];
-  if (["d", "p", "q", "dp", "dq", "qi", "k"].some((m) => m in jwk)) return ["", null, "dpop_jwk_private"];
+  if (hasPrivateMember(jwk)) return ["", null, "dpop_jwk_private"];
   const [kty, crv] = DPOP_CURVE[alg];
   if (!sameKeys(jwk, DPOP_JWK[alg]) || jwk.kty !== kty || jwk.crv !== crv) return ["", null, "dpop_jwk_invalid"];
   let key: KeyObject;
   try {
-    const x = Buffer.from(String(jwk.x), "base64url");
-    if (x.length !== 32 || (alg === "ES256" && Buffer.from(String(jwk.y), "base64url").length !== 32)) throw new Error("length");
+    const x = strictB64url(jwk.x);
+    if (x.length !== 32 || (alg === "ES256" && strictB64url(jwk.y).length !== 32)) throw new Error("length");
     key = publicKey(jwk);
   } catch { return ["", null, "dpop_jwk_invalid"]; }
   if ("x5c" in h) {
     const x5c = h.x5c;
     if (!Array.isArray(x5c) || x5c.length !== 1 || typeof x5c[0] !== "string") return ["", null, "dpop_x5c_invalid"];
-    let presented: J;
-    try {
-      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(x5c[0])) throw new Error("base64");
-      presented = new X509Certificate(Buffer.from(x5c[0], "base64")).publicKey.export({ format: "jwk" });
-    } catch { return ["", null, "dpop_x5c_invalid"]; }
-    const members = presented.kty === "OKP" && presented.crv === "Ed25519" ? DPOP_JWK.EdDSA
-      : presented.kty === "EC" && presented.crv === "P-256" ? DPOP_JWK.ES256 : null;
-    if (members === null) return ["", null, "dpop_x5c_invalid"];
-    if (!sameKeys(jwk, members) || members.some((m) => presented[m] !== jwk[m])) return ["", null, "dpop_x5c_key_mismatch"];
+    // One DER certificate (x509.ts: no PEM, no byte after it, no second encoding) of an Ed25519 or P-256 key.
+    let presented: ReturnType<typeof spkiKey>;
+    try { presented = spkiKey(certificateFacts(unb64(x5c[0])).spki); } catch { return ["", null, "dpop_x5c_invalid"]; }  // unb64: canonical only
+    if (presented === null) return ["", null, "dpop_x5c_invalid"];
+    const same = presented.kty === jwk.kty && presented.crv === jwk.crv && presented.x.equals(strictB64url(jwk.x))
+      && (presented.y === undefined || presented.y.equals(strictB64url(jwk.y)));
+    if (!same) return ["", null, "dpop_x5c_key_mismatch"];
   }
   if (!eq(jwkThumbprint(jwk), expectedJkt)) return ["", null, "dpop_key_not_confirmed"];
   return [alg, key, null];
 }
 
-function dpopClaims(p: J, method: string, url: string, now: number, skew: number, accessToken: string | null, content: Buffer): string | null {
+function dpopClaims(p: J, method: string, url: string, now: bigint, skew: number, accessToken: string | null, content: Buffer): string | null {
   if (!isObj(p)) return "dpop_malformed";
   if (p.htm !== method) return "dpop_htm_mismatch";
   try { if (typeof p.htu !== "string" || normalizeHtu(p.htu) !== normalizeHtu(url)) return "dpop_htu_mismatch"; }
   catch { return "dpop_htu_mismatch"; }
   if (accessToken === null) { if ("ath" in p) return "dpop_ath_unexpected"; }
   else if (!("ath" in p)) return "dpop_ath_missing";
-  else if (typeof p.ath !== "string" || !eq(p.ath, b64u(createHash("sha256").update(accessToken, "ascii").digest()))) return "dpop_ath_mismatch";
+  else if (!/^[\x00-\x7f]*$/.test(accessToken) || typeof p.ath !== "string" || !eq(p.ath, b64u(createHash("sha256").update(accessToken, "ascii").digest()))) return "dpop_ath_mismatch";  // a token that is not ASCII is none a proof can have hashed
   if (!isInt(p, "iat")) return "dpop_malformed";
-  if (p.iat < now - skew) return "dpop_iat_stale";
-  if (p.iat > now + skew) return "dpop_iat_future";
+  if (BigInt(p.iat) < now - BigInt(skew)) return "dpop_iat_stale";  // now: whole seconds
+  if (BigInt(p.iat) > now + BigInt(skew)) return "dpop_iat_future";
   if (typeof p.jti !== "string" || p.jti === "" || utf8Len(p.jti) > MAX_JTI_BYTES) return "dpop_jti_invalid";
   const digest = p.ans_content_digest;
   if (digest === undefined || digest === null) return "dpop_content_unbound";
@@ -349,23 +392,23 @@ function dpopClaims(p: J, method: string, url: string, now: number, skew: number
 
 /** possession.check_dpop: the verified proof and "ok", or null and the refusal code. */
 export function checkDpop(proof: J, method: string, url: string, at: string, expectedJkt: string, accessToken: string | null, content: Buffer): [DpopProof | null, string] {
-  if (typeof proof !== "string") return [null, "dpop_malformed"];
+  if (typeof proof !== "string" || !/^[\x00-\x7f]*$/.test(proof)) return [null, "dpop_malformed"];  // a header is ASCII
   if (proof.length > MAX_PROOF_BYTES) return [null, "dpop_too_large"];
   const parts = proof.split(".");
   if (parts.length !== 3 || parts.some((p) => p === "")) return [null, "dpop_malformed"];
   const [alg, key, problem] = dpopHeader(parts[0], expectedJkt);
   if (problem) return [null, problem];
-  const sig = Buffer.from(parts[2], "base64url");
+  let sig: Buffer;
+  try { sig = strictB64url(parts[2]); } catch { return [null, "dpop_malformed"]; }
   const data = Buffer.from(`${parts[0]}.${parts[1]}`, "ascii");
   const ok = alg === "EdDSA" ? cryptoVerify(null, data, key!, sig)
     : sig.length === 64 && cryptoVerify("sha256", data, { key: key!, dsaEncoding: "ieee-p1363" }, sig);
   if (!ok) return [null, "dpop_signature_unverified"];
   let claims: J;
   try {
-    if (b64u(Buffer.from(parts[1], "base64url")) !== parts[1]) return [null, "dpop_malformed"];
     claims = segmentJson(parts[1]);
   } catch (e) { return [null, e instanceof Duplicate ? "dpop_duplicate_member" : "dpop_malformed"]; }
-  const refused = dpopClaims(claims, method, url, Math.floor(ts(at) / 1e6), DEFAULT_SKEW, accessToken, content);
+  const refused = dpopClaims(claims, method, url, floorDiv(ts(at), MICROS), DEFAULT_SKEW, accessToken, content);
   if (refused) return [null, refused];
   return [{ method: "dpop", jkt: expectedJkt, jti: claims.jti, iat: claims.iat, replayExp: claims.iat + DEFAULT_SKEW + REPLAY_GRACE }, "ok"];
 }
@@ -374,11 +417,11 @@ export function checkDpop(proof: J, method: string, url: string, at: string, exp
 export function checkClientCertificate(der: Buffer | null, expected: string, at: string): string {
   if (der === null) return "mtls_certificate_missing";
   if (!eq(b64u(createHash("sha256").update(der).digest()), expected)) return "mtls_certificate_not_confirmed";
-  let cert: X509Certificate;
-  try { cert = new X509Certificate(der); } catch { return "mtls_certificate_invalid"; }
-  const when = ts(at) / 1000;
-  if (when < Date.parse(cert.validFrom)) return "mtls_certificate_not_yet_valid";
-  if (when > Date.parse(cert.validTo)) return "mtls_certificate_expired";
+  let facts: ReturnType<typeof certificateFacts>;
+  try { facts = certificateFacts(der); } catch (e) { if (e instanceof CertificateRefused) return "mtls_certificate_invalid"; throw e; }
+  const when = ts(at);
+  if (when < facts.notBefore) return "mtls_certificate_not_yet_valid";
+  if (when > facts.notAfter) return "mtls_certificate_expired";
   return "ok";
 }
 
@@ -386,21 +429,28 @@ function possession(tokens: Token[], request: RequestFacts | null, at: string): 
   const bound = tokens.filter((t) => "cnf" in t.claims);
   if (!bound.length) return null;
   const cnf = bound[0].claims.cnf;
-  const same = (a: J, b: J): boolean => isObj(a) && isObj(b) && sameKeys(a, Object.keys(b)) && Object.keys(b).every((k) => a[k] === b[k]);
-  if (!isObj(cnf) || bound.some((t) => !same(t.claims.cnf, cnf))) {
+  // Equal as RFC 8785 bytes (valueKey), as in Python: a member-by-member === never equates two equal nested values,
+  // and canonical would throw on a received integer beyond 2**53.
+  if (!isObj(cnf) || bound.some((t) => !valueKey(t.claims.cnf).equals(valueKey(cnf)))) {
     refuse("possession_not_the_grant_key");
   }
-  const facts = request ?? { method: "", url: "", content: null, dpop: null, clientCertificate: null };
+  const facts = request ?? { method: "", url: "", content: null, dpop: null, clientCertificate: null, headers: [] };
   const presented = [...bound].sort((a, b) => ["agent", "user", "sponsor"].indexOf(a.role) - ["agent", "user", "sponsor"].indexOf(b.role))[0];
+  const [proof, reason] = checkPossession(cnf, facts, at, presented.raw);
+  return proof ?? refuse(reason);
+}
+
+/** possession.check_possession: the proof of the key cnf names, by the method cnf names, or null and the refusal. A
+ * jkt needs a DPoP proof and ignores any client certificate; an x5t#S256 needs the certificate and ignores any DPoP. */
+export function checkPossession(cnf: J, facts: RequestFacts, at: string, accessToken: string | null): [PossessionProof | null, string] {
   const problem = cnfProblem(cnf);
-  if (problem) refuse(problem);
+  if (problem) return [null, problem];
   if ("jkt" in cnf) {
-    if (facts.dpop === null) return refuse("dpop_proof_missing");
-    const [proof, reason] = checkDpop(facts.dpop, facts.method, facts.url, at, cnf.jkt, presented.raw, facts.content ?? Buffer.alloc(0));
-    return proof ?? refuse(reason);
+    if (facts.dpop === null) return [null, "dpop_proof_missing"];
+    return checkDpop(facts.dpop, facts.method, facts.url, at, cnf.jkt, accessToken, facts.content ?? Buffer.alloc(0));
   }
   const reason = checkClientCertificate(facts.clientCertificate, cnf["x5t#S256"], at);
-  return reason === "ok" ? { method: "mtls", x5t: cnf["x5t#S256"] } : refuse(reason);
+  return reason === "ok" ? [{ method: "mtls", x5t: cnf["x5t#S256"] }, "ok"] : [null, reason];
 }
 
 // --- the stamp: probity_records.stamp -------------------------------------------------------------------------------
@@ -411,7 +461,6 @@ class StampRefused extends VerifiedIdentitiesRefused {}
 const stampRefuse = (code: string, detail = ""): never => { throw new StampRefused(code, detail); };
 const isString = (v: unknown): v is string => typeof v === "string";
 const isInteger = (v: unknown): v is number => typeof v === "number";
-const DEFAULT_PORTS: Record<string, string> = { "http:": "80", "https:": "443" };
 
 function dictionary(value: string): Map<string, Member> {
   try { return parseDictionary(value); } catch (e) { if (e instanceof SFError) return stampRefuse("stamp_malformed"); throw e; }
@@ -421,7 +470,7 @@ function dictionary(value: string): Map<string, Member> {
 export function stampFields(headers: [string, string][]): Map<string, string> | null {
   const found = new Map<string, string[]>();
   for (const [name, value] of headers) {
-    const lower = name.toLowerCase();
+    const lower = asciiLower(name);  // A to Z only: a platform's lower-casing also maps other characters
     if (STAMP_HEADERS.includes(lower)) found.set(lower, [...(found.get(lower) ?? []), value]);
   }
   if ([...found.values()].some((v) => v.length > 1)) stampRefuse("stamp_repeated");
@@ -448,14 +497,17 @@ function stampParams(member: Member | undefined): { created: number; expires: nu
 
 /** stamp.authority: the host in lower case, the port only when it is not the scheme's default. */
 function authority(target: string): string {
-  const u = new URL(target);
-  if (!(u.protocol in DEFAULT_PORTS) || u.username !== "" || u.password !== "" || u.hash !== "") throw new TypeError("a stamped target is an absolute http(s) URI");
-  return u.port === "" || u.port === DEFAULT_PORTS[u.protocol] ? u.hostname.toLowerCase() : `${u.hostname.toLowerCase()}:${u.port}`;
+  const [scheme, host, port, , rest] = httpUriParts(target);  // one reader of a target URI, with the Python twin
+  if (rest.includes("#")) throw new TypeError("a stamped target carries no fragment");
+  return uriAuthority(scheme, host, port);
 }
+
+/** A field value without its leading and trailing optional whitespace (RFC 9110 section 5.5: space and tab only). */
+const ows = (value: string): string => value.replace(/^[ \t]+|[ \t]+$/g, "");
 
 function signatureBase(method: string, target: string, digestValue: string, principalsValue: string, inner: InnerList): Buffer {
   const base = [`"@method": ${method}`, `"@target-uri": ${target}`, `"@authority": ${authority(target)}`,
-    `"content-digest": ${digestValue.trim()}`, `"${PRINCIPALS_HEADER}": ${principalsValue.trim()}`,
+    `"content-digest": ${ows(digestValue)}`, `"${PRINCIPALS_HEADER}": ${ows(principalsValue)}`,
     `"@signature-params": ${serializeInnerList(inner)}`].join("\n");
   if (!/^[\x00-\x7f]*$/.test(base) || base.includes("\r") || base.includes("\0")) stampRefuse("stamp_malformed");
   return Buffer.from(base, "ascii");
@@ -479,16 +531,21 @@ function principalsIdentity(value: string): CanonicalIdentity {
   return found;
 }
 
+/** The three structured fields of a stamp, read in the one order both readers use (stamp._dictionaries): every field
+ *  parses before any member is looked at, so an unreadable field is stamp_malformed whatever else the stamp says. */
+function dictionaries(fields: Map<string, string>): [Map<string, Member>, Map<string, Member>, Map<string, Member>] {
+  return [dictionary(fields.get("signature-input") as string), dictionary(fields.get("signature") as string), dictionary(fields.get("content-digest") as string)];
+}
+
 function presentedKeyId(fields: Map<string, string>): string {
-  return stampParams(dictionary(fields.get("signature-input") as string).get("probity")).keyid;
+  return stampParams(dictionaries(fields)[0].get("probity")).keyid;
 }
 
 /** stamp.verify_stamp: every stateless check of the stamp a request's header lines carry, under the pinned key. */
 export function verifyStamp(headers: [string, string][], method: string, target: string, body: Buffer | null, publicRaw: Buffer, nowNs: bigint): VerifiedStamp {
   const fields = stampFields(headers);
   if (fields === null) return stampRefuse("stamp_dropped");
-  const inputs = dictionary(fields.get("signature-input") as string), signatures = dictionary(fields.get("signature") as string);
-  const digests = dictionary(fields.get("content-digest") as string);
+  const [inputs, signatures, digests] = dictionaries(fields);
   const { created, expires, nonce, keyid, inner } = stampParams(inputs.get("probity"));
   if (keyid !== stampKeyId(publicRaw)) stampRefuse("stamp_key_mismatch");
   const signature = signatures.get("probity") as Item | InnerList;
@@ -500,17 +557,17 @@ export function verifyStamp(headers: [string, string][], method: string, target:
   let ok = false;
   try { ok = cryptoVerify(null, base, publicKey({ kty: "OKP", crv: "Ed25519", x: b64u(publicRaw) }), signature.value); } catch { ok = false; }
   if (!ok) stampRefuse("stamp_forged");
-  const moment = Number(nowNs) / 1e9;
   if (expires <= created) stampRefuse("stamp_malformed");
   if (expires - created > MAX_TTL_SECONDS) stampRefuse("stamp_lifetime_too_long");
-  if (created > moment) stampRefuse("stamp_not_yet_valid");
-  if (moment >= expires) stampRefuse("stamp_expired");
+  // Integers against integers: created and expires are at most 15 digits of seconds, the time is nanoseconds.
+  if (BigInt(created) * NANOS > nowNs) stampRefuse("stamp_not_yet_valid");
+  if (nowNs >= BigInt(expires) * NANOS) stampRefuse("stamp_expired");
   return { identity: principalsIdentity(fields.get(PRINCIPALS_HEADER) as string), nonce, expires };
 }
 
 function verifyStampOf(fields: Map<string, string>, bundle: TrustBundle, request: RequestFacts, at: string): VerifiedStamp {
   const key = stampKey(bundle, presentedKeyId(fields));
-  return verifyStamp(request.headers, request.method, request.url, request.content, rawOf(key.jwk), BigInt(ts(at)) * 1000n);
+  return verifyStamp(request.headers, request.method, request.url, request.content, rawOf(key.jwk), ts(at) * 1000n);
 }
 
 // --- the request --------------------------------------------------------------------------------------------------
@@ -533,7 +590,7 @@ export function verifyRequest(tokens: Record<string, J>, bundleDoc: J, at: strin
   if (Object.keys(tokens).some((r) => !(TOKEN_ROLES as readonly string[]).includes(r))) refuse("principal_role_not_configured");
   const fields = request === null ? null : stampFields(request.headers);
   if (Object.keys(tokens).length === 0 && fields === null) refuse("principal_credential_missing");
-  const when = ts(at) / 1e6;
+  const when = ts(at);  // microseconds
   let identity: CanonicalIdentity, proof: PossessionProof | null = null, stamp: { nonce: string; expires: number } | null = null;
   if (fields !== null && request !== null) {
     if (Object.keys(tokens).length !== 0) refuse("identity_sources_mixed");
@@ -571,8 +628,8 @@ export function proofDocument(proof: PossessionProof | null): J {
 export function judgeVerified(v: J): J {
   const r = v.request;
   const facts: RequestFacts | null = r === null ? null : {
-    method: r.method, url: r.url, content: r.contentB64 === null ? null : Buffer.from(r.contentB64, "base64"),
-    dpop: r.dpop, clientCertificate: r.clientCertificateB64 === null ? null : Buffer.from(r.clientCertificateB64, "base64"),
+    method: r.method, url: r.url, content: r.contentB64 === null ? null : unb64(r.contentB64),
+    dpop: r.dpop, clientCertificate: r.clientCertificateB64 === null ? null : unb64(r.clientCertificateB64),
     headers: r.headers,
   };
   const transport = v.transport === null ? null : CanonicalIdentity.parse(v.transport);

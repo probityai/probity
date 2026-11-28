@@ -23,17 +23,14 @@ its thumbprint matches), and both ES256 and EdDSA (Ed25519) are accepted.
 
 from __future__ import annotations
 
-import base64
 import hashlib
-import hmac
 import json
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
-from urllib.parse import urlsplit
+from typing import Any, Final
 
-from cryptography import x509
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -46,9 +43,21 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from .core import Signer
-from .grants import ts
-from .identity import b64url, jwk_thumbprint, unb64url
+from .certificate import CertificateRefused, certificate_facts, spki_key
+from .core import (
+    TOKEN_MAX_DEPTH,
+    JsonRefused,
+    Signer,
+    admitted_loads,
+    ascii_lower,
+    decimal,
+    exact_int,
+    same_text,
+    unb64,
+)
+from .grants import micros
+from .identity import b64url, has_private_member, jwk_thumbprint, unb64url
+from .identity import public_jwk as jwk_bytes
 
 CNF_METHODS = ("jkt", "x5t#S256")
 DPOP_TYP = "dpop+jwt"
@@ -127,35 +136,78 @@ class DpopProof:
     replay_exp: int
 
 
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for k, v in pairs:
-        if k in out:
-            raise ValueError("duplicate")
-        out[k] = v
-    return out
-
-
 def _segment_json(segment: str) -> Any:
-    raw = unb64url(segment)
-    if b64url(raw) != segment:
-        raise ValueError("not canonical base64url")
-    return json.loads(raw, object_pairs_hook=_no_duplicates)
+    """One DPoP segment as JSON, read by the package's strict reader; ``JsonRefused`` otherwise."""
+    return admitted_loads(unb64url(segment), max_depth=TOKEN_MAX_DEPTH)  # unb64url reads only the canonical spelling
+
+
+def _segment_refusal(exc: ValueError) -> str:
+    """The registered code for a segment that did not read: a repeated member, or anything else malformed."""
+    duplicate = isinstance(exc, JsonRefused) and exc.variant == "DuplicateMember"
+    return "dpop_duplicate_member" if duplicate else "dpop_malformed"
+
+
+#: RFC 3986 section 2: the only characters a URI is written with (unreserved, reserved, and ``%`` followed by two hex
+#: digits). Anything else (a space, a control byte, a tab or line break, a non-ASCII character, a backslash) makes the
+#: text something other than the request URI it is compared with (RFC 9449 section 4.3). Python's ``urlsplit`` strips
+#: leading spaces and C0 controls and deletes tabs and line breaks, so the reader refuses them before it splits.
+_URI_TEXT = re.compile(r"(?:[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*")
+#: scheme "://" authority path, then a query or fragment (RFC 3986 section 3).
+_HTU_PARTS = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*)://([^/?#]*)([^?#]*)([?#].*)?", re.DOTALL)
+_IP_LITERAL = re.compile(r"\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?")
+_REG_NAME = re.compile(r"[A-Za-z0-9\-._~!$&'()*+,;=%]+")
+#: ``grammar/target-uri.json``: any number of leading zeros, then at most five digits; never ``int`` on the whole run
+#: (Python refuses a run of more than 4300 digits, JavaScript reads it).
+PORT = re.compile(r"0*([0-9]{1,5})")
+#: The default port of each scheme an http target URI may carry.
+DEFAULT_PORTS: Final = {"http": 80, "https": 443}
+
+
+def http_uri_parts(url: object) -> tuple[str, str, int | None, str, str]:
+    """(scheme, host, port, path, rest) of an absolute http or https URI; ``rest`` is its query and fragment text.
+
+    The one reader of a request target in this package (a DPoP ``htu`` and a stamp's ``@target-uri``), with the
+    TypeScript twin ``httpUriParts``: the text is read only when it is written in the RFC 3986 alphabet, so a space, a
+    control byte, a tab or line break, a non-ASCII character or a backslash is ``ValueError`` (Python's ``urlsplit``
+    strips or deletes some of them and WHATWG URL parsing rewrites others, so two readers would see two URIs). Scheme
+    and host come back in lower case, a bracketed IP literal keeps its brackets, and userinfo (RFC 9110 section 4.2.4),
+    an empty host, and an empty, non-numeric or out-of-range port are ``ValueError``."""
+    if not isinstance(url, str) or not _URI_TEXT.fullmatch(url):
+        raise ValueError("uri_not_in_the_uri_alphabet")
+    parts = _HTU_PARTS.fullmatch(url)
+    if parts is None:
+        raise ValueError("uri_not_absolute")
+    scheme, authority, path, rest = ascii_lower(parts[1]), parts[2], parts[3], parts[4] or ""
+    if scheme not in DEFAULT_PORTS or "@" in authority:
+        raise ValueError("uri_not_absolute")
+    literal = _IP_LITERAL.fullmatch(authority)
+    if literal is not None:
+        host, port_text = f"[{ascii_lower(literal[1])}]", literal[2]
+    elif "[" in authority or "]" in authority:
+        raise ValueError("uri_not_absolute")
+    else:
+        name, colon, after = authority.partition(":")
+        host, port_text = ascii_lower(name), (after if colon else None)
+        if not _REG_NAME.fullmatch(host):
+            raise ValueError("uri_not_absolute")
+    if port_text is None:
+        return scheme, host, None, path, rest
+    digits = PORT.fullmatch(port_text)
+    if digits is None or decimal(digits[1]) > 65535:
+        raise ValueError("uri_port_invalid")
+    return scheme, host, decimal(digits[1]), path, rest
+
+
+def uri_authority(scheme: str, host: str, port: int | None) -> str:
+    """The host, with the port only when it is not the scheme's default (RFC 9421 ``@authority``, RFC 9449 htu)."""
+    return host if port is None or port == DEFAULT_PORTS[scheme] else f"{host}:{port}"
 
 
 def normalize_htu(url: str) -> str:
     """RFC 9449 section 4.3 target URI: scheme and host lower case, default port dropped, no query or fragment,
-    an empty path as ``/``. The path is otherwise compared exactly."""
-    parts = urlsplit(url)
-    scheme, host = parts.scheme.lower(), (parts.hostname or "").lower()
-    if scheme not in ("https", "http") or not host:
-        raise ValueError("htu_not_absolute")
-    port = parts.port
-    if port is None or (scheme, port) in (("https", 443), ("http", 80)):
-        authority = host
-    else:
-        authority = f"{host}:{port}"
-    return f"{scheme}://{authority}{parts.path or '/'}"
+    an empty path as ``/``. The path is otherwise compared exactly; ``ValueError`` as ``http_uri_parts`` refuses."""
+    scheme, host, port, path, _ = http_uri_parts(url)
+    return f"{scheme}://{uri_authority(scheme, host, port)}{path or '/'}"
 
 
 class _JwkRefused(ValueError):
@@ -166,21 +218,16 @@ def _load_jwk(alg: str, jwk: Any) -> Any:
     """The public key of a JWK of exactly the shape ``alg`` takes, or ``_JwkRefused`` naming the defect."""
     if not isinstance(jwk, dict):
         raise _JwkRefused("dpop_jwk_invalid")
-    if any(m in jwk for m in ("d", "p", "q", "dp", "dq", "qi", "k")):
+    if has_private_member(jwk):
         raise _JwkRefused("dpop_jwk_private")
     kty, crv = _JWK_CURVE[alg]
     if set(jwk) != set(_JWK_MEMBERS[alg]) or jwk.get("kty") != kty or jwk.get("crv") != crv:
         raise _JwkRefused("dpop_jwk_invalid")
     try:
-        x = unb64url(jwk["x"])
+        raw = jwk_bytes(jwk)  # identity.public_jwk: canonical members, full-size coordinates, nothing private
         if alg == "EdDSA":
-            if len(x) != 32:
-                raise ValueError
-            return Ed25519PublicKey.from_public_bytes(x)
-        y = unb64url(jwk["y"])
-        if len(x) != 32 or len(y) != 32:
-            raise ValueError
-        return ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), b"\x04" + x + y)
+            return Ed25519PublicKey.from_public_bytes(raw["x"])
+        return ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), b"\x04" + raw["x"] + raw["y"])
     except (ValueError, TypeError, KeyError) as exc:
         raise _JwkRefused("dpop_jwk_invalid") from exc
 
@@ -203,12 +250,16 @@ def _x5c_problem(x5c: Any, jwk: Mapping[str, Any]) -> str | None:
     """An ``x5c`` is tolerated only as one certificate presenting the very key in ``jwk``."""
     if not isinstance(x5c, list) or len(x5c) != 1 or not isinstance(x5c[0], str):
         return "dpop_x5c_invalid"
-    try:
-        cert = x509.load_der_x509_certificate(base64.b64decode(x5c[0], validate=True))
-        presented = public_jwk(cert.public_key())
-    except (ValueError, TypeError, UnsupportedAlgorithm):
+    try:  # one DER certificate (certificate.py: no PEM, no byte after it, no second encoding); unb64: canonical only
+        presented = spki_key(certificate_facts(unb64(x5c[0])).spki)
+    except ValueError:
         return "dpop_x5c_invalid"
-    return None if presented == dict(jwk) else "dpop_x5c_key_mismatch"
+    if presented is None:  # neither an Ed25519 nor a P-256 key
+        return "dpop_x5c_invalid"
+    held = {m: unb64url(jwk[m]) for m in ("x", "y") if m in jwk}  # the proof key's coordinates; _load_jwk read it
+    same = (presented["kty"], presented["crv"]) == (jwk["kty"], jwk["crv"]) and all(
+        presented[m] == held[m] for m in held)
+    return None if same else "dpop_x5c_key_mismatch"
 
 
 def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
@@ -216,7 +267,7 @@ def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
     try:
         h = _segment_json(segment)
     except ValueError as exc:
-        return "", None, "dpop_duplicate_member" if str(exc) == "duplicate" else "dpop_malformed"
+        return "", None, _segment_refusal(exc)
     if not isinstance(h, dict):
         return "", None, "dpop_malformed"
     if set(h) - _HEADER_MEMBERS:
@@ -234,13 +285,18 @@ def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
         problem = _x5c_problem(h["x5c"], h["jwk"])
         if problem:
             return "", None, problem
-    if not hmac.compare_digest(jwk_thumbprint(h["jwk"]), expected_jkt):
+    if not same_text(jwk_thumbprint(h["jwk"]), expected_jkt):
         return "", None, "dpop_key_not_confirmed"
     return alg, key, None
 
 
+def _jti_ok(jti: Any) -> bool:
+    """A non-empty string of at most ``MAX_JTI_BYTES`` UTF-8 bytes; a lone surrogate counts as its three bytes."""
+    return isinstance(jti, str) and bool(jti) and len(jti.encode("utf-8", "surrogatepass")) <= MAX_JTI_BYTES
+
+
 def _int_claim(value: Any) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
+    return exact_int(value)
 
 
 def _claims_problem(p: Any, method: str, url: str, now: int, skew: int, access_token: str | None,
@@ -259,22 +315,21 @@ def _claims_problem(p: Any, method: str, url: str, now: int, skew: int, access_t
             return "dpop_ath_unexpected"
     elif "ath" not in p:
         return "dpop_ath_missing"
-    elif not isinstance(p["ath"], str) or not hmac.compare_digest(
-            p["ath"], b64url(hashlib.sha256(access_token.encode("ascii")).digest())):
-        return "dpop_ath_mismatch"
+    elif (not isinstance(access_token, str) or not access_token.isascii()
+          or not same_text(p["ath"], b64url(hashlib.sha256(access_token.encode("ascii")).digest()))):
+        return "dpop_ath_mismatch"  # a token that is not ASCII is none a proof can have hashed
     if not _int_claim(p.get("iat")):
         return "dpop_malformed"
     if p["iat"] < now - skew:
         return "dpop_iat_stale"
     if p["iat"] > now + skew:
         return "dpop_iat_future"
-    jti = p.get("jti")
-    if not isinstance(jti, str) or not jti or len(jti.encode("utf-8")) > MAX_JTI_BYTES:
+    if not _jti_ok(p.get("jti")):
         return "dpop_jti_invalid"
     digest = p.get(CONTENT_DIGEST_CLAIM)
     if digest is None:
         return "dpop_content_unbound" if require_content_binding else None
-    if not isinstance(digest, str) or not hmac.compare_digest(digest, b64url(hashlib.sha256(content).digest())):
+    if not same_text(digest, b64url(hashlib.sha256(content).digest())):
         return "dpop_content_mismatch"
     return None
 
@@ -287,8 +342,10 @@ def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str,
     ``url`` is the verifier's own external URL for the request, never one built from the client's Host
     header. ``expected_jkt`` comes from issuer-signed content (the grant's ``cnf``, the token's ``cnf``),
     never from the proof. Returns the proof or the refusal code."""
-    if not isinstance(proof, str) or len(proof) > MAX_PROOF_BYTES:
-        return None, "dpop_too_large" if isinstance(proof, str) else "dpop_malformed"
+    if not isinstance(proof, str) or not proof.isascii():  # a request header is ASCII; the signing input is built from it
+        return None, "dpop_malformed"
+    if len(proof) > MAX_PROOF_BYTES:
+        return None, "dpop_too_large"
     parts = proof.split(".")
     if len(parts) != 3 or not all(parts):
         return None, "dpop_malformed"
@@ -305,8 +362,8 @@ def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str,
     try:
         claims = _segment_json(body)
     except ValueError as exc:
-        return None, "dpop_duplicate_member" if str(exc) == "duplicate" else "dpop_malformed"
-    now = int(ts(at).timestamp())
+        return None, _segment_refusal(exc)
+    now = micros(at) // 1_000_000  # whole seconds, by floor
     problem = _claims_problem(claims, method, url, now, skew, access_token, content, require_content_binding)
     if problem:
         return None, problem
@@ -345,16 +402,16 @@ def check_client_certificate(der: bytes | None, expected: str, at: str) -> str:
     within its validity period at ``at``."""
     if der is None:
         return "mtls_certificate_missing"
-    if not hmac.compare_digest(cnf_for_certificate(der)["x5t#S256"], expected):
+    if not same_text(cnf_for_certificate(der)["x5t#S256"], expected):
         return "mtls_certificate_not_confirmed"
     try:
-        cert = x509.load_der_x509_certificate(der)
-    except ValueError:
+        facts = certificate_facts(der)
+    except CertificateRefused:
         return "mtls_certificate_invalid"
-    when = ts(at)
-    if when < cert.not_valid_before_utc:
+    when = micros(at)
+    if when < facts.not_before:
         return "mtls_certificate_not_yet_valid"
-    if when > cert.not_valid_after_utc:
+    if when > facts.not_after:
         return "mtls_certificate_expired"
     return "ok"
 
@@ -409,22 +466,22 @@ _RECORD_MEMBERS = {"dpop": {"iat", "jkt", "jti", "method"}, "mtls": {"method", "
 
 def possession_record_problem(record: Any, cnf: Any) -> str | None:
     """None when ``record`` is a well-formed possession record for the key the grant's ``cnf`` confirms."""
-    if not isinstance(record, dict) or record.get("method") not in _RECORD_MEMBERS:
+    if not isinstance(record, dict) or not isinstance(record.get("method"), str) \
+            or record["method"] not in _RECORD_MEMBERS:  # a list or object method is unhashable: refuse, never raise
         return "possession_record_malformed"
     method = record["method"]
     if set(record) != _RECORD_MEMBERS[method]:
         return "possession_record_malformed"
-    if method == "dpop" and (not _int_claim(record["iat"]) or not isinstance(record["jti"], str)
-                             or not record["jti"] or len(record["jti"].encode("utf-8")) > MAX_JTI_BYTES):
+    if method == "dpop" and (not _int_claim(record["iat"]) or not _jti_ok(record["jti"])):
         return "possession_record_malformed"
     member, value = ("jkt", record["jkt"]) if method == "dpop" else ("x5t#S256", record["x5t#S256"])
     if not isinstance(cnf, dict) or member not in cnf or not isinstance(value, str) \
-            or not hmac.compare_digest(value, str(cnf[member])):
+            or not same_text(value, cnf[member]):
         return "possession_not_the_grant_key"
     return None
 
 
-def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, str] | None:
+def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, Any] | None:
     """(proof key, iat, use time) for an ``authorize`` record whose grant evidence carries a DPoP use."""
     pred = body.get("predicate")
     if not isinstance(pred, Mapping) or pred.get("phase") != "authorize":
@@ -434,9 +491,9 @@ def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, str] | None:
     if not isinstance(record, Mapping) or record.get("method") != "dpop":
         return None
     jkt, jti, iat = record.get("jkt"), record.get("jti"), record.get("iat")
-    if not isinstance(jkt, str) or not isinstance(jti, str) or not isinstance(iat, int) or isinstance(iat, bool):
+    if not isinstance(jkt, str) or not isinstance(jti, str) or not isinstance(iat, int) or not exact_int(iat):
         return None
-    return proof_key(jkt, jti), iat, str(pred.get("at"))
+    return proof_key(jkt, jti), iat, pred.get("at")
 
 
 def duplicate_proofs(records: Iterable[tuple[int, Mapping[str, Any]]], *,
@@ -458,14 +515,14 @@ def duplicate_proofs(records: Iterable[tuple[int, Mapping[str, Any]]], *,
         key, iat, at = spent
         permit = body["predicate"].get("permitId")
         try:
-            used = ts(at).timestamp()
+            used = micros(at)  # a use time that is not a timestamp (any other JSON type included) is refused by ts
         except (ValueError, TypeError):
             found.append((n, "dpop_proof_use_time_invalid"))
             continue
         earlier = first.get(key)
-        if earlier is not None and earlier[2] != permit and used <= earlier[1] + skew + REPLAY_GRACE:
+        if earlier is not None and earlier[2] != permit and used <= (earlier[1] + skew + REPLAY_GRACE) * 1_000_000:
             found.append((n, f"dpop_proof_replayed:{earlier[0]}"))
             continue
-        if earlier is None or used > earlier[1] + skew + REPLAY_GRACE:
+        if earlier is None or used > (earlier[1] + skew + REPLAY_GRACE) * 1_000_000:
             first[key] = (n, iat, permit)
     return found

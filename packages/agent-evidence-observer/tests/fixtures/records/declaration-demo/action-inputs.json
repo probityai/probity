@@ -1,42 +1,114 @@
 {
-  "grant": {
-    "expiresAt": "2026-11-03T16:04:55Z",
-    "issuedAt": "2026-11-03T15:59:55Z",
-    "issuerKey": "2efea1d8be170a640ec5caca89973d5e2ecccb1c2ffc36bde8f384849bf500f9",
-    "profile": "probity-protected-action-reference-v0",
-    "request": {
-      "attempt_id": "attempt-1",
-      "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
-      "principal_id": "spiffe://lab.example/agent",
-      "request_id": "request-1",
-      "run_id": "declaration-run-1",
-      "target_path": "/work/report.txt",
-      "tenant_id": "tenant-a",
-      "tool_id": "org.probity.files.replace"
-    },
-    "signature": "1nUrwMfSdghrgEYFDJvOmEAkgYuInvckyfjRZC7fYmtziz9jKcASI2ZHP11Zfj0PCFowPowYI7HioFkIWtY6Cg=="
-  },
+  "grant": [
+    {
+      "body": {
+        "cnf": {
+          "jkt": "4De0_6JpZnIceVB_q79I6fJkHO2MGAkEz14-wLqSviY"
+        },
+        "context": {
+          "attemptId": {
+            "type": "exact",
+            "value": "attempt-1"
+          },
+          "principalId": {
+            "type": "exact",
+            "value": "spiffe://lab.example/agent"
+          },
+          "requestId": {
+            "type": "exact",
+            "value": "request-1"
+          },
+          "runId": {
+            "type": "exact",
+            "value": "declaration-run-1"
+          },
+          "tenantId": {
+            "type": "exact",
+            "value": "tenant-a"
+          }
+        },
+        "expiresAt": "2026-11-03T16:04:55Z",
+        "grantId": "request-1",
+        "holderKey": "l6fDSxZ2PKRqbN6Ypfs6aw2lbAJv0asqOMrX5XI7KNc=",
+        "issuerKey": "lPDW4k6Jkli3XBIY5LZjiHFAV/MWm0b61edmZzazHpk=",
+        "maxDepth": 0,
+        "notBefore": "2026-11-03T15:59:55Z",
+        "parent": null,
+        "tools": {
+          "org.probity.files.replace": {
+            "args": {
+              "contentSha256": {
+                "type": "exact",
+                "value": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f"
+              },
+              "targetPath": {
+                "type": "exact",
+                "value": "/work/report.txt"
+              }
+            }
+          }
+        }
+      },
+      "sig": "6lEXUbz486eHaoLVnBPIG9PLbBmYL3uiOsLPy8o1hJHZLCq7xShdToks1AQ47Y21imd4gmXinpHWgSLn6T0wBQ=="
+    }
+  ],
   "grantPolicy": {
-    "issuer_key": "2efea1d8be170a640ec5caca89973d5e2ecccb1c2ffc36bde8f384849bf500f9",
+    "issuer_key": "94f0d6e24e899258b75c1218e4b66388714057f3169b46fad5e7666736b31e99",
     "max_validity_seconds": 300
   },
-  "outsideCatalogGrant": {
-    "expiresAt": "2026-11-03T16:04:55Z",
-    "issuedAt": "2026-11-03T15:59:55Z",
-    "issuerKey": "2efea1d8be170a640ec5caca89973d5e2ecccb1c2ffc36bde8f384849bf500f9",
-    "profile": "probity-protected-action-reference-v0",
-    "request": {
-      "attempt_id": "attempt-1",
-      "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
-      "principal_id": "spiffe://lab.example/agent",
-      "request_id": "request-1",
-      "run_id": "declaration-run-1",
-      "target_path": "/work/report.txt",
-      "tenant_id": "tenant-a",
-      "tool_id": "org.other.files.replace"
-    },
-    "signature": "fiV6e0rvCFC3a9qEio6xLSn1KS7UfqeqYAy5xp85d+BxfBavFCz60XYaHs8oB3TaswAIbDy/fQHjUR4gx7LXAQ=="
-  },
+  "outsideCatalogGrant": [
+    {
+      "body": {
+        "cnf": {
+          "jkt": "4De0_6JpZnIceVB_q79I6fJkHO2MGAkEz14-wLqSviY"
+        },
+        "context": {
+          "attemptId": {
+            "type": "exact",
+            "value": "attempt-1"
+          },
+          "principalId": {
+            "type": "exact",
+            "value": "spiffe://lab.example/agent"
+          },
+          "requestId": {
+            "type": "exact",
+            "value": "request-1"
+          },
+          "runId": {
+            "type": "exact",
+            "value": "declaration-run-1"
+          },
+          "tenantId": {
+            "type": "exact",
+            "value": "tenant-a"
+          }
+        },
+        "expiresAt": "2026-11-03T16:04:55Z",
+        "grantId": "request-1",
+        "holderKey": "l6fDSxZ2PKRqbN6Ypfs6aw2lbAJv0asqOMrX5XI7KNc=",
+        "issuerKey": "lPDW4k6Jkli3XBIY5LZjiHFAV/MWm0b61edmZzazHpk=",
+        "maxDepth": 0,
+        "notBefore": "2026-11-03T15:59:55Z",
+        "parent": null,
+        "tools": {
+          "org.other.files.replace": {
+            "args": {
+              "contentSha256": {
+                "type": "exact",
+                "value": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f"
+              },
+              "targetPath": {
+                "type": "exact",
+                "value": "/work/report.txt"
+              }
+            }
+          }
+        }
+      },
+      "sig": "tJabjAdZT7C8rEXAW8QAFewtkiONUM5QOOjd1S9ES2wOpjnD3xw4LATPNVE3Zxes/aCt96Ro2Pf3KaU0oqsVDw=="
+    }
+  ],
   "outsideCatalogRequest": {
     "attempt_id": "attempt-1",
     "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",

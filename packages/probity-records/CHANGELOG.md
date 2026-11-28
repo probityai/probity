@@ -2,6 +2,122 @@
 
 ## Unreleased
 
+- **A grant's URL constraints read the URL by one grammar, in both languages.** `url_pattern` and `url_safe` read
+  the URL by `grammar/constraint-url.json` (Python `constraints.url_parts`, TypeScript `urlParts`) instead of
+  `urlsplit` and WHATWG `new URL`, which each repaired text the other refused, so one grant had two verdicts. A URL
+  is now refused, in both readers, when it is not written in the RFC 3986 alphabet (a backslash, a space, a
+  non-ASCII full stop), has fewer than two slashes after the scheme, carries userinfo (an empty one too), a port of
+  0, past 65535 or with a leading zero, a host with an empty label (a trailing dot), a host ending in a number that
+  is not a canonical dotted quad (`127.1`, `0x7f.0.0.1`, `2130706433`), a path with a `.` or `..` segment or an
+  empty segment, or an escape that decodes to a dot, a slash, a backslash or a percent sign. Before, such a path
+  was resolved and then checked; it is now refused. Scheme, host and the grant's host patterns are compared in ASCII
+  lower case. No URL either reader allowed before is newly allowed. `tests/test_constraint_url.py` runs both readers
+  on 21,484 generated URLs and compares the parts and every verdict.
+
+- **One grammar per received text, in both languages.** `grammar/*.json` states what a timestamp, an integer claim, a
+  compact JWS member, a target URI, an X.509 certificate, a stamp field and the trust bundle are; both readers are
+  tested against those files and the differential in `tests/parity_r6c` is generated from them. A timestamp is
+  written in the digits 0 to 9 (Python's `\d` also read other scripts' digits) and is read for years 0001 to 9999
+  (the TypeScript reader refused every year before 100); its value is integer microseconds, a `bigint` in
+  TypeScript. An integer claim (`iat`, `exp`, `nbf`, a DPoP `iat`) beyond 2**53 - 1 is refused, and times are
+  compared as integers. A DPoP `x5c` and a client certificate are read from their DER bytes by one outline walk
+  (`certificate.py`, TypeScript `x509.ts`): PEM text, bytes after the certificate and a length that is not in its
+  shortest form are refused, where Node's parser accepted the first two. A port is leading zeros and at most five
+  digits. A header `alg` or `typ` that is not a string names nothing (TypeScript read a list holding `"EdDSA"` as
+  `"EdDSA"`). A stamp's byte sequence with one base64 digit left over is refused in both readers, its three
+  structured fields parse before its key is looked up, and a field value is trimmed of space and tab only.
+  `TrustBundle.parse` refuses a pin whose roles hold a list or an object instead of raising, and
+  `identity.token_segments` returns None for a signature in a second spelling instead of raising. A test counts
+  text coercion (`str()`, `String()`) and platform text functions in reader code: the request readers have none.
+
+- **A vote, a delegation and quorum evidence are read by type, in both languages.** A vote's `approver`,
+  `onBehalfOf` and `role`, a delegation's `deputy`, `deputyKey` and `roles`, and the evidence's policy id and
+  `proposer` count only when they are strings (`roles` a list of strings), and the TypeScript reader looks a name up
+  among an object's own members only. Before, the TypeScript reader read a list holding `"carol"` as `"carol"`, found
+  an approver, a policy and a proposer named `constructor` in every object, and took a proposer `[]` as present,
+  while the Python reader raised on a `role` that was a list and on a vote with no `decision`. A vote whose
+  `decision` is neither `"approve"` nor `"reject"` is now `vote_shape` in both readers, and a delegation whose `roles`
+  is one text no longer delegates every role that text contains. Evidence whose `policy` is not an object names no
+  pinned policy, and evidence whose `votes` are not a list is `quorum_vote_invalid:vote_shape`; the Python reader
+  raised on both. `vectors/shared/quorum.json` adds QV6 to QV25.
+
+- **One reading of a request target, of base64 and of a token segment, in both languages.** A DPoP `htu` and a stamp
+  `@target-uri` are read by `possession.http_uri_parts` (TypeScript `httpUriParts`): text outside the RFC 3986 URI
+  alphabet (a space, a control byte, a tab or line break, a backslash, a non-ASCII character), userinfo, an empty
+  host and an empty, non-numeric or out-of-range port are refused before any parse. Before, `urlsplit` stripped a
+  leading space or deleted a tab that WHATWG URL parsing kept or rewrote, so the two readers compared different
+  targets. A DPoP `x5c` certificate, approval payloads, envelope payloads and an authority block's `argsB64`
+  (`core.call_args_of`, TypeScript `callArgsOf`) are read as canonical padded base64 only (`core.unb64`), so missing
+  or extra padding, a line break or the URL-safe alphabet is refused in both. The TypeScript principal token reader
+  reads its header and claims through one strict reader (canonical base64url, `TOKEN_MAX_DEPTH`, jcs-admit), refuses
+  a `crit` header as `token_critical_unsupported`, and reads its key through `publicJwk`. Every key reader refuses
+  private key material through one guard (`identity.refuse_private`, TypeScript `refusePrivate`) inside
+  `public_jwk` and `jwk_thumbprint`, and a test finds every reader rather than listing them; a passport holder key or
+  a pinned JWKS carrying private material is now refused.
+
+- **One list of private JWK members, and a differential that reaches every refusal code.** Every key reader refuses
+  the members of `identity.PRIVATE_JWK_MEMBERS` (`d`, `p`, `q`, `dp`, `dq`, `qi`, `oth`, `k`, `priv`); the naming
+  registry, the principal reader and the DPoP header reader used to pass a key carrying `oth`. The key-bound tokens of
+  one request must carry the same `cnf` as RFC 8785 bytes in both readers (Python took `true` for `1`, TypeScript
+  never equated equal nested values), and `possession_record_problem` refuses a list or object `method` instead of
+  raising. The differential in `tests/parity_r6c` now signs edited tokens and DPoP proofs again and judges
+  `check_possession`, `possession_record_problem` and `duplicate_proofs` directly, so each of the 55 registered codes
+  of `verified_identities` and `possession` is reached in both languages, and a code no case reaches fails the run.
+
+- **A public key has one spelling.** `identity.public_jwk` reads a JWK's `x`, `y`, `n` and `e` only in their canonical
+  base64url, an EC coordinate only at the full size of its curve (RFC 7518 section 6.2.1.2), an Ed25519 `x` only at
+  32 bytes, and RSA `n` and `e` only without a leading zero octet (RFC 7518 section 2). `jwk_thumbprint` exists only
+  for such a key, and the JWS checks (`identity`, `registry.verify_signature`) read keys through it. Before, a short
+  EC coordinate verified as the same point under a second thumbprint, a trust bundle could pin a respelled key that
+  the TypeScript reader then decoded leniently, and a respelled stamp key made `TrustBundle.stamp_key` raise. The
+  TypeScript twin's `publicJwk` applies the same rule, and the differential in `tests/parity_r6c` now respells every
+  bundle key of every shared row. A key's `kty` and `crv` name a curve only as strings: a `crv` of `["P-256"]` read as
+  P-256 in TypeScript under a second thumbprint and made the Python lookup raise, and a `kty` of `"constructor"` made
+  the TypeScript thumbprint raise; each is now `jwk_unsupported`.
+- **Every document a stranger can hand the package is read by one strict reader, `core.admitted_loads`.** A repeated
+  member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds, nesting past the reader's
+  depth (128 containers; 32 for a token segment or registry document, `core.TOKEN_MAX_DEPTH`) and, where a caller sets
+  one, more than a byte bound are refused as `core.JsonRefused` (a `ValueError`; its `variant` names the cause). Before,
+  these inputs went to `json.loads`: deep nesting raised `RecursionError` out of a verifier, a repeated member kept
+  the last value, and a lone surrogate reached a canonicalizer and raised. The readers now behind it: the record
+  bundle (envelope, payload, leaf, map commitment), the stamp window field, renewal requests, the anchored statement
+  of a trust bundle, registry documents and tokens, identity-provider token segments (`verified_identities`,
+  `identity.verify_token`), DPoP header and claims, OIDC approval claims, the call arguments of an exception or a
+  grant allow, exports and seals, the journal verifier's key certificates and checkpoint provenance, the journal's
+  own lines, sealed plaintext and the Vault answer. Each answers with its own registered refusal and never raises.
+- **A token or DPoP segment has one spelling, and text a verifier cannot encode is a refusal.** `identity.unb64url`
+  reads only the canonical unpadded base64url of a segment: a space, a newline, padding, a stray last digit or text
+  outside ASCII is refused, where `base64.urlsafe_b64decode` skipped or accepted it, so one token had many spellings
+  and digests. The TypeScript twin's `strictB64url` applies the same rule at every token and DPoP segment, which
+  removes the one disagreement the differential found (`token_malformed` in Python, `token_signature_unverified` in
+  TypeScript). `identity.verify_token` answers `token_malformed` for a token that is not ASCII, and `check_dpop`
+  answers `dpop_malformed` for a proof that is not ASCII (checked before its size) and `dpop_ath_mismatch` for an
+  access token that is not; before, each raised `UnicodeEncodeError`. Comparisons of received claims go through
+  `core.same_text`, which never raises (`hmac.compare_digest` raised `TypeError` on text outside ASCII), and the
+  witness note, checkpoint and policy readers, the receipt map key and the DSSE envelope's `payloadType` refuse a
+  lone surrogate (`core.is_utf8_text`) instead of raising.
+- **New refusal codes:** `anchor_statement_malformed` (the signed payload under a trust anchor is not admissible JSON),
+  `jws_signature_not_low_s` and `passport_kb_critical` (see below). `identity.verify_token` now also answers
+  `token_critical_unsupported` for a token header that demands an extension through `crit`, and `token_malformed` for a
+  header or claim set that is not a JSON object. A hostile `argsB64` in an exception or grant allow is
+  `authority_args_are_not_the_call_arguments`.
+- **An ES256 token is read only in its low-S form (`s <= n/2`) by the registry verifier** (`jws_signature_not_low_s`):
+  ECDSA `(r, s)` and `(r, n - s)` both verify, so one signed statement had two token texts and two digests. An ES256
+  issuer of registry tokens must normalize `s` (`s = n - s` when `s > n/2`) before encoding. The single-use key of a
+  validation is `Validation.spend_key`, `(issuer, jti)`, so the statement is spent once whatever its spelling.
+  Third-party identity-provider tokens (`identity.verify_token`, `verified_identities`) are not held to low-S: about
+  half of the ES256 tokens those providers issue are high-S, and their single-use keys are the `jti`, not the text.
+- **A key binding JWT that demands an extension through `crit` is refused** (`passport_kb_critical`); the issuer JWT
+  already was.
+- **A record bundle's leaf is compared as canonical bytes, not as values.** A leaf spelling `"sequence":true` or `1.0`
+  for sequence 1 compared equal before and is now `bundle_record_mismatch`; the map commitment's `coversSize` must be
+  an integer.
+- **`exports.parse_export` takes `max_bytes` (default `MAX_EXPORT_BYTES`, 128 MiB) and reads through the strict
+  reader**: a repeated member is `jcs_refused:DuplicateMember`, no longer `export_has_duplicate_keys`. The
+  `verify-export` and `compare-seals` commands report an unreadable seal as a failure (exit 1) instead of a traceback.
+- **The TypeScript verifier reads token and DPoP segments the same way** (32 containers deep, strict UTF-8, no lone
+  surrogate), so a segment the Python verifier refuses is refused there with the same code.
+
 - **`approver` names every person an approval counted: one principal, or a list of at least two.** A principals block
   may now carry `approver` as a list of principals when an approval took several people (an M-of-N quorum); each member
   is a full principal checked as the single form is, and each must be a person the approval may name. The single form

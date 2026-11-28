@@ -236,6 +236,8 @@ ADVERSARIAL = {
     "duplicate alg member": (lambda: present(dpop=".".join(
         [b64url(('{"alg":"ES256","typ":"dpop+jwt","alg":"none","jwk":' + json.dumps(HEAD["jwk"]) + "}").encode())]
         + proof().split(".")[1:])), "dpop_duplicate_member"),
+    "header nested past the recursion limit": (lambda: present(dpop=".".join(
+        [b64url(b"[" * 1500 + b"]" * 1500)] + proof().split(".")[1:])), "dpop_malformed"),
     "x5c with another key": (lambda: present(dpop=_resign(proof(), {**HEAD, "x5c": [base64.b64encode(
         _certificate(OTHER_KEY)).decode()]})), "dpop_x5c_key_mismatch"),
     "ath absent with a token": (lambda: present(dpop=_resign(proof(), payload={
@@ -258,6 +260,40 @@ ADVERSARIAL = {
     "garbage client certificate": (lambda: present(MTLS_CNF, cert=b"not a certificate"),
                                    "mtls_certificate_not_confirmed"),
 }
+
+
+def _signed_raw(head: bytes, body: bytes, key=DPOP_KEY) -> str:
+    """A proof whose header and claims are exactly the given bytes, signed by ``key``."""
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+    hb, pb = b64url(head), b64url(body)
+    r, s = decode_dss_signature(key.sign(f"{hb}.{pb}".encode(), ec.ECDSA(hashes.SHA256())))
+    return f"{hb}.{pb}.{b64url(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
+
+
+def test_claims_the_strict_reader_refuses_are_refused_after_the_signature_checks() -> None:
+    """A signed proof whose claims nest past the recursion limit, repeat a member or carry a lone surrogate."""
+    head = json.dumps(HEAD, separators=(",", ":")).encode()
+    for claims, reason in [(b"[" * 1500 + b"]" * 1500, "dpop_malformed"),
+                           (b'{"jti":"a","jti":"b"}', "dpop_duplicate_member"),
+                           (b'{"jti":"\\ud800"}', "dpop_malformed")]:
+        assert present(dpop=_signed_raw(head, claims)) == (None, reason), claims[:20]
+
+
+def test_a_dpop_header_the_strict_reader_refuses_is_dpop_malformed() -> None:
+    """The cases of the TypeScript twin's test in node/probity-records-verify/test/verified-readers.test.ts, in order."""
+    def run(head: bytes) -> tuple:
+        return present(dpop=f"{b64url(head)}.{b64url(b'{}')}.{b64url(b'x')}")
+
+    for head in (b"[" * 1500 + b"]" * 1500, b"[" * 33 + b"]" * 33, b'{"a":"\\ud800"}',
+                 b'{"a":"\xff"}', b"[1]"):
+        assert run(head) == (None, "dpop_malformed"), head[:20]
+    assert run(b'{"a":1,"a":2}') == (None, "dpop_duplicate_member")
+
+
+def test_a_dpop_proof_past_the_size_bound_is_too_large_before_any_segment_is_read() -> None:
+    big = f"{b64url(b'[' * 20_000 + b']' * 20_000)}.{b64url(b'{}')}.{b64url(b'x')}"
+    assert present(dpop=big) == (None, "dpop_too_large")
 
 
 @pytest.mark.parametrize("case", sorted(ADVERSARIAL))

@@ -27,11 +27,12 @@ root. Vectors: vectors/shared/receipt-map.json (membership, both kinds of non-me
 from __future__ import annotations
 
 import base64
-import binascii
 import bisect
 import hashlib
 from dataclasses import dataclass
 from typing import Any
+
+from .core import unb64
 
 DEPTH = 256
 EMPTY = bytes(32)
@@ -52,8 +53,13 @@ def _u16(data: bytes) -> bytes:
 
 def check_key(permit_id: Any, stage: Any) -> tuple[str, str]:
     """A (permit id, stage) the map accepts: a non-empty permit id of at most 256 bytes, one of the four stages."""
-    if not isinstance(permit_id, str) or not 0 < len(permit_id.encode()) <= MAX_PERMIT_BYTES:
-        raise MapError("a permit id is a non-empty string of at most 256 bytes")
+    # This module loads by file path for the vector generator, so it imports nothing from the package.
+    try:
+        size = len(permit_id.encode()) if isinstance(permit_id, str) else 0
+    except UnicodeEncodeError:  # a lone surrogate has no UTF-8 spelling
+        size = 0
+    if not 0 < size <= MAX_PERMIT_BYTES:
+        raise MapError("a permit id is a non-empty UTF-8 string of at most 256 bytes")
     if any(ord(ch) < 0x20 for ch in permit_id):
         raise MapError("a permit id may hold no control character")
     if stage not in STAGES:
@@ -210,10 +216,10 @@ class Proof:
     def from_doc(cls, doc: Any) -> Proof:
         try:
             key = bytes.fromhex(doc["key"])
-            siblings = tuple(EMPTY if s is None else base64.b64decode(s, validate=True) for s in doc["siblings"])
+            siblings = tuple(EMPTY if s is None else unb64(s) for s in doc["siblings"])
             t = doc["terminal"]
             terminal = None if t is None else Entry(bytes.fromhex(t["key"]), t["index"], bytes.fromhex(t["leafHash"]))
-        except (KeyError, TypeError, ValueError, binascii.Error) as exc:
+        except (KeyError, TypeError, ValueError) as exc:
             raise MapError(f"map proof malformed: {type(exc).__name__}") from exc
         if len(key) != 32 or any(len(s) != 32 for s in siblings) or len(siblings) > DEPTH:
             raise MapError("map proof malformed: lengths")

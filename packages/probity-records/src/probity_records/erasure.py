@@ -58,7 +58,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from .core import canonical
+from .core import admitted_loads, canonical, same_text
 
 FORMAT: Final = "probity-record-envelope/v2"
 KEPT: Final = "kept"
@@ -548,7 +548,12 @@ def open_sealed(
             plain = AESGCM(pkey).decrypt(blob[:NONCE_BYTES], blob[NONCE_BYTES:], _aad(leaf, erasure["schema"], role, cls))
         except InvalidTag as exc:
             raise EnvelopeError("ciphertext_refused", f"{role}/{cls}") from exc
-        fields = json.loads(plain)
+        try:
+            fields = admitted_loads(plain)
+        except ValueError as exc:  # authenticated bytes are still the sealer's: a hostile one is refused, not parsed
+            raise EnvelopeError("ciphertext_refused", f"{role}/{cls}") from exc
+        if not isinstance(fields, dict):
+            raise EnvelopeError("ciphertext_refused", f"{role}/{cls}")
         for path, value in fields.items():
             if classes.get(path) != cls or erasure["roles"].get(path) != role:
                 raise EnvelopeError("ciphertext_field_undeclared", path)
@@ -666,7 +671,7 @@ def verify_disclosure(erasure: Mapping[str, Any], disclosure: Mapping[str, Any])
         got = tag(bytes.fromhex(disclosure["fieldKey"]), disclosure["value"])
     except (KeyError, ValueError, TypeError):
         return False
-    return hmac.compare_digest(got, want)
+    return same_text(got, want)
 
 
 # ---- what a verifier prints -----------------------------------------------------------------------------------

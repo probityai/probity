@@ -1,0 +1,53 @@
+{
+  "text": "trust-bundle",
+  "spec": "The trust bundle document of docs/verified-identities.md. Every member is checked for its JSON type before it is compared, hashed or looked up; a list of names is a non-empty list of distinct non-empty strings.",
+  "readers": {
+    "python": [
+      "verified_identities.TrustBundle.parse",
+      "trust_bundle.parse_anchors"
+    ],
+    "typescript": [
+      "verified.ts parseBundle"
+    ]
+  },
+  "productions": {
+    "bundle": {
+      "members": [
+        "anchors",
+        "audience",
+        "environment",
+        "issuers",
+        "profile",
+        "tenant",
+        "version"
+      ],
+      "refusal": "trust_bundle_malformed"
+    },
+    "anchor": {
+      "members": [
+        "jwk",
+        "notAfter",
+        "notBefore",
+        "predicateTypes",
+        "role",
+        "status",
+        "thumbprint"
+      ],
+      "times": [
+        "notBefore",
+        "notAfter"
+      ]
+    },
+    "pin": {
+      "members": [
+        "roles",
+        "tenants",
+        "thumbprint"
+      ]
+    }
+  },
+  "derived": [
+    "each member and element of the bundle replaced by each of compact-jws.json otherTypes",
+    "each object given each of compact-jws.json ownMembers as an extra member"
+  ]
+}

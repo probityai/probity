@@ -65,8 +65,43 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 
-from .core import admitted_loads, canonical, sha256_hex
-from .grants import ts
+from .core import (
+    TOKEN_MAX_DEPTH,
+    admitted_loads,
+    ascii_lower,
+    canonical,
+    exact_int,
+    sha256_hex,
+)
+from .grants import micros, ts
+
+#: Every JWK member that carries private key material: the members of the IANA "JSON Web Key Parameters" registry whose
+#: information class is Private. RFC 7518 section 6.2.2 (EC ``d``), section 6.3.2 (RSA ``d``, ``p``, ``q``, ``dp``,
+#: ``dq``, ``qi`` and ``oth``, the other primes of a multi-prime key), section 6.4.1 (``k``), RFC 8037 section 2 (OKP
+#: ``d``) and the AKP key type's ``priv``. Every reader that refuses private material reads this one set, and the
+#: TypeScript twin is ``PRIVATE_JWK_MEMBERS`` in verify.ts; tests/test_private_jwk_members.py holds them equal.
+PRIVATE_JWK_MEMBERS: Final = frozenset({"d", "p", "q", "dp", "dq", "qi", "oth", "k", "priv"})
+
+
+class PrivateKeyMaterial(ValueError):
+    """A received JWK that carries a member of ``PRIVATE_JWK_MEMBERS``: a key whose private half is published proves
+    nobody holds it, and a pin on it lets anyone sign as its issuer."""
+
+
+def has_private_member(jwk: object) -> bool:
+    """True when ``jwk`` is a JSON object carrying any member of ``PRIVATE_JWK_MEMBERS`` (TypeScript:
+    ``hasPrivateMember``). Member names are case-sensitive (RFC 7517 section 4), so ``D`` is not ``d``."""
+    return isinstance(jwk, Mapping) and not PRIVATE_JWK_MEMBERS.isdisjoint(jwk)
+
+
+def refuse_private(jwk: object) -> None:
+    """Raise ``PrivateKeyMaterial`` for a JWK that carries private material.
+
+    Every reader of a received JWK goes through this by construction: ``public_jwk`` calls it first, and
+    ``jwk_thumbprint`` and every signature check read key bytes only through ``public_jwk``.
+    tests/test_private_jwk_members.py finds every function that reads a JWK and refuses each member through it."""
+    if has_private_member(jwk):
+        raise PrivateKeyMaterial("a JWK carries private key material")
 
 ROLES = ("user", "agent", "sponsor", "approver")
 #: The members of an autonomous block beside its roles.
@@ -94,15 +129,66 @@ def b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
-def unb64url(text: str) -> bytes:
-    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+def unb64url(text: object) -> bytes:
+    """The bytes of one unpadded base64url segment; ``ValueError`` unless ``text`` is its canonical spelling.
+
+    Only the canonical text of each segment is read: ``base64.urlsafe_b64decode`` alone skips a space, a newline or
+    any other byte outside the alphabet and accepts a last digit with stray low bits, so one token would have many
+    spellings, many digests, and a different answer from a reader that decodes strictly. The TypeScript twin's
+    ``strictB64url`` applies the same rule. ``text`` is typed ``object`` because callers pass received JSON values
+    unread; anything but a ``str`` is a ``ValueError``.
+    """
+    if not isinstance(text, str) or not text.isascii() or "=" in text:
+        raise ValueError("not unpadded ASCII base64url")
+    data = base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))  # binascii.Error is a ValueError
+    if b64url(data) != text:
+        raise ValueError("not the canonical base64url of its bytes")
+    return data
+
+
+# The coordinate or key bytes of each curve these readers verify (RFC 7518 section 6.2.1.2, RFC 8037 section 2).
+CURVE_BYTES = {("EC", "P-256"): 32, ("OKP", "Ed25519"): 32}
+
+
+def public_jwk(jwk: Mapping[str, Any]) -> dict[str, bytes]:
+    """The key bytes of a public JWK these readers verify; ``ValueError`` unless every key member has one spelling.
+
+    Each of ``x``, ``y``, ``n`` and ``e`` is read with ``unb64url``, so only its canonical base64url counts. An EC
+    coordinate is the full size of its curve (RFC 7518 section 6.2.1.2: "MUST be the full size of a coordinate"), an
+    Ed25519 ``x`` is 32 bytes, and RSA ``n`` and ``e`` use the minimum number of octets (RFC 7518 section 2,
+    Base64urlUInt: no leading zero octet). Without this one key has several spellings, several RFC 7638
+    thumbprints, and a pin or a duplicate check keyed on the thumbprint can be stepped around. A key carrying a
+    member of ``PRIVATE_JWK_MEMBERS`` is ``PrivateKeyMaterial``.
+    """
+    refuse_private(jwk)
+    kty = jwk.get("kty")
+    if kty == "RSA":
+        n, e = unb64url(jwk.get("n")), unb64url(jwk.get("e"))
+        if not n or not e or n[0] == 0 or e[0] == 0:
+            raise ValueError("an RSA n or e is not the minimum number of octets")
+        return {"n": n, "e": e}
+    crv = jwk.get("crv")
+    # A received kty or crv may be any JSON value; only a string names a curve (a list would not even hash).
+    size = CURVE_BYTES.get((kty, crv)) if isinstance(kty, str) and isinstance(crv, str) else None
+    if size is None:
+        raise ValueError("jwk_unsupported")
+    out = {m: unb64url(jwk.get(m)) for m in (("x", "y") if kty == "EC" else ("x",))}
+    if any(len(v) != size for v in out.values()):
+        raise ValueError("a key coordinate is not the full size of its curve")
+    return out
 
 
 def jwk_thumbprint(jwk: Mapping[str, Any]) -> str:
-    """RFC 7638 SHA-256 thumbprint, base64url without padding."""
-    members = THUMBPRINT_MEMBERS.get(str(jwk.get("kty")))
+    """RFC 7638 SHA-256 thumbprint, base64url without padding, of a key ``public_jwk`` reads; else ``ValueError``.
+
+    A thumbprint names one key, so it exists only for the one spelling of that key, and never for a key that carries
+    private material."""
+    refuse_private(jwk)
+    kty = jwk.get("kty")
+    members = THUMBPRINT_MEMBERS.get(kty) if isinstance(kty, str) else None  # only a string names a key type
     if members is None or any(m not in jwk for m in members):
         raise ValueError("jwk_unsupported")
+    public_jwk(jwk)
     data = json.dumps({m: jwk[m] for m in members}, sort_keys=True, separators=(",", ":")).encode()
     return b64url(hashlib.sha256(data).digest())
 
@@ -130,7 +216,7 @@ def _shape(p: Any) -> str | None:
     for m in ("tokenDigest", "jwksDigest"):
         if not isinstance(p[m], str) or len(p[m]) != 64 or any(c not in "0123456789abcdef" for c in p[m]):
             return "principal_malformed"
-    if not isinstance(p["key"], dict) or any(k in p["key"] for k in ("d", "p", "q", "dp", "dq", "qi", "k")):
+    if not isinstance(p["key"], dict) or has_private_member(p["key"]):
         return "principal_key_invalid"
     if "cnf" in p:
         from .possession import cnf_problem
@@ -373,18 +459,18 @@ def act_grade(block: Mapping[str, Any]) -> str:
 
 def _verify_jws(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig: bytes) -> bool:
     try:
-        if alg == "EdDSA" and jwk.get("kty") == "OKP" and jwk.get("crv") == "Ed25519":
-            Ed25519PublicKey.from_public_bytes(unb64url(jwk["x"])).verify(sig, signing_input)
-        elif alg == "ES256" and jwk.get("kty") == "EC" and jwk.get("crv") == "P-256":
-            key = ec.EllipticCurvePublicNumbers(int.from_bytes(unb64url(jwk["x"]), "big"),
-                                                int.from_bytes(unb64url(jwk["y"]), "big"), ec.SECP256R1()).public_key()
+        raw = public_jwk(jwk)
+        if alg == "EdDSA" and jwk.get("kty") == "OKP":
+            Ed25519PublicKey.from_public_bytes(raw["x"]).verify(sig, signing_input)
+        elif alg == "ES256" and jwk.get("kty") == "EC":
+            point = ec.EllipticCurvePublicNumbers(int.from_bytes(raw["x"], "big"), int.from_bytes(raw["y"], "big"),
+                                                  ec.SECP256R1()).public_key()  # fmt: skip
             if len(sig) != 64:
                 return False
             der = encode_dss_signature(int.from_bytes(sig[:32], "big"), int.from_bytes(sig[32:], "big"))
-            key.verify(der, signing_input, ec.ECDSA(hashes.SHA256()))
+            point.verify(der, signing_input, ec.ECDSA(hashes.SHA256()))
         elif alg == "RS256" and jwk.get("kty") == "RSA":
-            rsa_key = rsa.RSAPublicNumbers(int.from_bytes(unb64url(jwk["e"]), "big"),
-                                           int.from_bytes(unb64url(jwk["n"]), "big")).public_key()
+            rsa_key = rsa.RSAPublicNumbers(int.from_bytes(raw["e"], "big"), int.from_bytes(raw["n"], "big")).public_key()
             rsa_key.verify(sig, signing_input, padding.PKCS1v15(), hashes.SHA256())
         else:
             return False
@@ -415,12 +501,14 @@ def token_segments(token: str) -> tuple[dict[str, Any], dict[str, Any], bytes] |
     if len(parts) != 3 or not all(_B64URL_SEGMENT.fullmatch(s) and len(s) % 4 != 1 for s in parts):
         return None
     try:
-        header, claims = admitted_loads(unb64url(parts[0])), admitted_loads(unb64url(parts[1]))
+        header = admitted_loads(unb64url(parts[0]), max_depth=TOKEN_MAX_DEPTH)
+        claims = admitted_loads(unb64url(parts[1]), max_depth=TOKEN_MAX_DEPTH)
+        signature = unb64url(parts[2])  # a signature in a second spelling (stray low bits) is not a compact JWS either
     except ValueError:
         return None
     if not isinstance(header, dict) or not isinstance(claims, dict):
         return None
-    return header, claims, unb64url(parts[2])
+    return header, claims, signature
 
 
 def _claim_time(claims: Mapping[str, Any], name: str) -> str | None:
@@ -438,6 +526,8 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
     that key is in the JWKS snapshot whose digest ``p`` carries, its ``typ`` names no other credential
     type than ``p``'s ``source``, and every stated claim matches. With ``at`` (the record's time), a token
     whose ``nbf`` is after ``at`` is refused as not yet valid."""
+    if not isinstance(token, str) or not token.isascii():  # received text: refused before it is hashed or read
+        return "token_malformed"
     if sha256_hex(token.encode("ascii")) != p.get("tokenDigest"):
         return "token_digest_mismatch"
     if jwks_digest(jwks) != p.get("jwksDigest"):
@@ -448,15 +538,19 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
     if segments is None:
         return "token_malformed"
     header, claims, signature = segments
+    if "crit" in header:  # RFC 7515 section 4.1.11: a verifier that implements no extension refuses one that is demanded
+        return "token_critical_unsupported"
     head_b64, body_b64, _ = token.split(".")
     if header.get("kid") != p.get("kid"):
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":
         return "token_typ_not_id_jag"
-    named = TYP_SOURCES.get(str(header.get("typ", "")).lower().removeprefix("application/"))
+    # Type first: a typ or an alg that is not a string names nothing, in either reader.
+    typ, alg = header.get("typ"), header.get("alg")
+    named = TYP_SOURCES.get(ascii_lower(typ).removeprefix("application/")) if isinstance(typ, str) else None
     if named is not None and named != p.get("source"):
         return f"token_type_mismatch:{named}"
-    if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), signature):
+    if not isinstance(alg, str) or not _verify_jws(alg, p["key"], f"{head_b64}.{body_b64}".encode(), signature):
         return "token_signature_unverified"
     aud = claims.get("aud")
     # An ID token names its client in ``azp`` (OpenID Connect Core 1.0, section 2); an access token in ``client_id``.
@@ -475,9 +569,9 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         return "token_claim_mismatch:cnf"
     if at is not None and "nbf" in claims:
         nbf = claims["nbf"]
-        if isinstance(nbf, bool) or not isinstance(nbf, int):
+        if not exact_int(nbf):
             return "token_malformed"
-        if nbf > ts(at).timestamp():
+        if nbf * 1_000_000 > micros(at):
             return "token_not_yet_valid"
     return None
 

@@ -14,25 +14,23 @@ from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
-LOCKS = (
-    "pydantic-ai-native-2026-10-02/requirements.lock",
-    "pydantic-ai-native-2026-10-02/requirements-reader.lock",
-    "pydantic-recovery-2026-10-03/requirements-test.lock",
-    "pydantic-recovery-2026-10-03/requirements-reader.lock",
-    "joint-recovery-2026-10-02/requirements-reader.lock",
-    "target-recovery-2026-10-02/requirements.lock",
-    "langgraph-ticket-2026-10-02/requirements.lock",
-    "langgraph-ticket-2026-10-02/requirements-restart.lock",
-    "adk-a2a-failed-task-2026-10-03/requirements-reader.lock",
-    "aps-durable-refund-2026-10-05/requirements.lock",
-    "pic-aps-refund-reader-2026-10-09/requirements.lock",
-    "haystack-native-2026-10-03/requirements-reader.lock",
-    "smolagents-native-2026-10-03/requirements-reader.lock",
-    "witness-operator-2026-10-03/requirements.lock",
-    "witness-operator-2026-10-03/requirements-reader.lock",
-    "witnessed-run-selection-2026-10-04/requirements.lock",
-    "witnessed-run-selection-2026-10-04/requirements-reader.lock",
-)
+EXEMPT = "runtime-locks.toml"
+PATTERNS = ("*.lock", "requirements*.txt")
+
+
+def runtime_locks(root: Path) -> list[Path]:
+    """Every requirements file under interop/ outside retained runs, less declared exemptions.
+
+    Discovery, not a list: a new profile lock is checked the day it lands, and a lock that never
+    installs the observer must say so in runtime-locks.toml.
+    """
+    exempt = {item["path"] for item in tomllib.loads((root / "scripts" / EXEMPT).read_text())["exempt"]}
+    interop = root / "interop"
+    found = {p for pattern in PATTERNS for p in interop.rglob(pattern) if "retained" not in p.relative_to(interop).parts}
+    missing = exempt - {p.relative_to(interop).as_posix() for p in found}
+    if missing:
+        raise SystemExit("exemption names no requirements file: " + ", ".join(sorted(missing)))
+    return sorted(p for p in found if p.relative_to(interop).as_posix() not in exempt)
 
 
 def main() -> None:
@@ -40,8 +38,8 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1]
     project = tomllib.loads((root / "pyproject.toml").read_text())["project"]
     requirements = [Requirement(value) for value in project["dependencies"]]
-    for relative in LOCKS:
-        path = root / "interop" / relative
+    locks = runtime_locks(root)
+    for path in locks:
         selected = dict(re.findall(r"^([A-Za-z0-9_.-]+)==([^\s;]+)", path.read_text(), re.MULTILINE))
         selected = {canonicalize_name(name): Version(version) for name, version in selected.items()}
         for requirement in requirements:
@@ -52,7 +50,7 @@ def main() -> None:
             version = selected.get(canonicalize_name(requirement.name))
             if version is None or version not in requirement.specifier:
                 raise SystemExit(f"{path.relative_to(root)} omits core requirement {requirement}")
-    print(f"{len(LOCKS)} current-source runtime locks contain every mandatory Observer requirement")
+    print(f"{len(locks)} current-source runtime locks contain every mandatory Observer requirement")
 
 
 if __name__ == "__main__":

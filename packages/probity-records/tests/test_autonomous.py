@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import base64
 import json
-import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -171,7 +170,7 @@ def autonomous(tmp_path, *, revoke_sponsor: bool = False, pin_grant: bool = True
                root_pinned: bool = True) -> list[str]:  # fmt: skip
     idp, gate, root, holder = Idp(), Signer.generate(), Signer.generate(), Signer.generate()
     grant = standing(root, holder)
-    now = int(time.time())
+    now = int(NOW.timestamp())  # one clock for the file: a second reading drifts past the 60 s the cases allow
     block = {"agent": idp.principal("agent-nightly", "agent-nightly", iat=now - 60, exp=now + 3600,
                                     cnf=cnf_for_signer(holder)),
              "sponsor": idp.principal("owner@example.com", "console", iat=now - 7200, exp=now + 3600),
@@ -216,7 +215,7 @@ def test_a_standing_grant_the_auditor_cannot_resolve_or_whose_root_is_not_pinned
 def test_autonomous_grade_and_sponsor_check_time() -> None:
     idp, root, holder = Idp(), Signer.generate(), Signer.generate()
     grant = standing(root, holder)
-    now = int(time.time())
+    now = int(NOW.timestamp())  # one clock for the file: a second reading drifts past the 60 s the cases allow
     block = {"agent": idp.principal("a", "a", iat=now - 60, exp=now + 60, cnf=cnf_for_signer(holder)),
              "sponsor": idp.principal("owner@example.com", "console", iat=now - 7200, exp=now - 3000),
              "session": {"id": "s", "startedAt": iso(NOW)}, "standingGrant": grant_digest(grant["body"])}
@@ -247,7 +246,7 @@ def rests_on(tmp_path, *, authority: str = "standing", tool: str = "refund", arg
     plain = issue_grant(root, grant_id="broad", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=BROAD,
                         not_before=iso(NOW - timedelta(hours=1)), expires_at=iso(NOW + timedelta(days=365)))
     chains = {"standing": [grant], "plain": [plain]}
-    now = int(time.time())
+    now = int(NOW.timestamp())  # one clock for the file: a second reading drifts past the 60 s the cases allow
     block = {"agent": idp.principal("agent-nightly", "agent-nightly", iat=now - 60, exp=now + 3600,
                                     cnf=cnf_for_signer(holder)),
              "sponsor": idp.principal("owner@example.com", "console", iat=now - 7200, exp=now + 3600),
